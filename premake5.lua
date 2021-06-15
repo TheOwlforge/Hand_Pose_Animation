@@ -37,7 +37,7 @@ project "HandPose"
         OPENCV_DIR .. CV_LIB,
     }
 
-    files { "src/**.h", "src/**.cpp"}
+    files { "src/**.h", "src/**.hpp", "src/**.cpp"}
 
     pchheader "pch.h"
     pchsource "src/pch.cpp"
