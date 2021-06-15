@@ -22,6 +22,11 @@ public:
 		return (T*)cv::imread(filename).data;
 	}
 
+	static inline void saveImageCV(const char* filename, cv::Mat& mat)
+	{
+		cv::imwrite(filename, mat);
+	}
+
 	static inline bool readVideoCV(const char* filename, cv::VideoCapture& cap)
 	{
 		cap = cv::VideoCapture(filename);
