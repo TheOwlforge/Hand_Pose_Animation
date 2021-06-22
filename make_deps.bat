@@ -19,7 +19,7 @@ if exist deps\OpenPose\build\ (
     echo Skipping OpenPose build - folder already exists.
 ) else (
     :: Add -D GPU_MODE=CPU_ONLY or OPENCL depending on your hardware
-    cmake -G "Visual Studio 16 2019" -S deps\Openpose -B deps\OpenPose\build
+    cmake -G "Visual Studio 16 2019" -S deps\Openpose -B deps\OpenPose\build -D GPU_MODE=CPU_ONLY -D BUILD_EXAMPLES=OFF
     cmake --build deps\OpenPose\build --config "Debug" 
     cmake --build deps\OpenPose\build --config "Release"
 )
