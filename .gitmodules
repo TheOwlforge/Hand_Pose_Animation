@@ -1,3 +1,6 @@
 [submodule "deps/OpenCV"]
 	path = deps/OpenCV
 	url = https://github.com/opencv/opencv.git
+[submodule "deps/OpenPose"]
+	path = deps/OpenPose
+	url = https://github.com/CMU-Perceptual-Computing-Lab/openpose
