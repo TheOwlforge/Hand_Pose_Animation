@@ -5,5 +5,3 @@
 bin/
 bin-int/
 .vs/
-deps/OpenCV/
-deps/OpenPose/
