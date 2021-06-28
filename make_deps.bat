@@ -21,7 +21,7 @@ if exist .\deps\OpenPose\build\ (
     IF ERRORLEVEL 1 (
         cmake -G "Visual Studio 16 2019" -S .\deps\Openpose -B .\deps\OpenPose\build -D GPU_MODE=CPU_ONLY -D BUILD_EXAMPLES=OFF
     ) else (
-        cmake -G "Visual Studio 16 2019" -S .\deps\Openpose -B .\deps\OpenPose\build -D GPU_MODE=CPU_ONLY -D BUILD_EXAMPLES=OFF
+        cmake -G "Visual Studio 16 2019" -S .\deps\Openpose -B .\deps\OpenPose\build -D GPU_MODE=CUDA -D BUILD_EXAMPLES=OFF
     )
     cmake --build .\deps\OpenPose\build --config "Debug" 
     cmake --build .\deps\OpenPose\build --config "Release"
