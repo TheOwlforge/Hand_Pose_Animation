@@ -29,11 +29,13 @@ project "HandPose"
         includedirs
         {
             OPENPOSE_DIR .. "3rdparty/windows/caffe/include",
+            OPENPOSE_DIR .. "3rdparty/windows/caffe_cpu/include",
             OPENPOSE_DIR .. "3rdparty/windows/caffe3rdparty/include"
         }
         libdirs
         {
             OPENPOSE_DIR .. "3rdparty/windows/caffe/lib",
+            OPENPOSE_DIR .. "3rdparty/windows/caffe_cpu/lib",
             OPENPOSE_DIR .. "3rdparty/windows/caffe3rdparty/lib"
         }
     filter {} --reset
@@ -74,16 +76,7 @@ project "HandPose"
     filter {"system:windows"}
         postbuildcommands
         {
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/caffezlibd1.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/cublas64_11.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/cublasLt64_11.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/cudart64_110.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/cudnn64_8.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/curand64_10.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/libgcc_s_seh-1.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/libgfortran-3.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/libopenblas.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/libquadmath-0.dll bin/" .. outdir)
+            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/ bin/" .. outdir),
         }
 
     filter {"system:windows", "configurations:Debug"}
@@ -91,21 +84,13 @@ project "HandPose"
         { 
             "opencv_world" .. OPENCV_VERSION .. "d",
             "aded", "IlmImfd", "ippicvmt", "ippiwd", "ittnotifyd", "libjpeg-turbod", "libopenjp2d", "libpngd", "libprotobufd", "libtiffd", "libwebpd", "quircd", "zlibd",
-            "openposed", "caffe-d", "caffeproto-d", "snappyd", "lmdbd", "glogd", "gflagsd", "caffezlibd", "caffehdf5_D", "caffehdf5_hl_D"
+            "openposed", "caffe-d", "caffeproto-d", "snappyd", "lmdbd", "glogd", "gflagsd", "caffezlibd", "caffehdf5_D", "caffehdf5_hl_D",
+            "boost_date_time-vc142-mt-gd-x64-1_74", "boost_filesystem-vc142-mt-gd-x64-1_74", "boost_system-vc142-mt-gd-x64-1_74", "boost_thread-vc142-mt-gd-x64-1_74"
         }
         postbuildcommands
         {
             ("{COPY} " .. OPENPOSE_DIR .. "build/x64/Debug/openposed.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/caffe-d.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/caffehdf5_D.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/caffehdf5_hl_D.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/gflagsd.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/glogd.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/opencv_world450d.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/boost_date_time-vc142-mt-gd-x64-1_74.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/boost_filesystem-vc142-mt-gd-x64-1_74.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/boost_system-vc142-mt-gd-x64-1_74.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/boost_thread-vc142-mt-gd-x64-1_74.dll bin/" .. outdir)
+            ("{COPY} deps/boost/ bin/" .. outdir),
         }
 
     filter {"system:windows", "configurations:Release"}
@@ -113,21 +98,12 @@ project "HandPose"
         { 
             "opencv_world" .. OPENCV_VERSION,
             "ade", "IlmImf", "ippicvmt", "ippiw", "ittnotify", "libjpeg-turbo", "libopenjp2", "libpng", "libprotobuf", "libtiff", "libwebp", "quirc", "zlib",
-            "openpose", "caffe", "caffeproto", "snappy", "lmdb", "glog", "gflags", "caffezlib", "caffehdf5", "caffehdf5_hl"
+            "openpose", "caffe", "caffeproto", "snappy", "lmdb", "glog", "gflags", "caffezlib", "caffehdf5", "caffehdf5_hl",
+            "boost_date_time-vc142-mt-x64-1_74", "boost_filesystem-vc142-mt-x64-1_74", "boost_system-vc142-mt-x64-1_74", "boost_thread-vc142-mt-x64-1_74"
         }
         postbuildcommands
         {
             ("{COPY} " .. OPENPOSE_DIR .. "build/x64/Release/openpose.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/caffe.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/caffehdf5.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/caffehdf5_hl.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/gflags.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/glog.dll bin/" .. outdir),
-	    ("{COPY} " .. OPENPOSE_DIR .. "build/bin/opencv_world450.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/boost_date_time-vc142-mt-x64-1_74.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/boost_filesystem-vc142-mt-x64-1_74.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/boost_system-vc142-mt-x64-1_74.dll bin/" .. outdir),
-            ("{COPY} " .. OPENPOSE_DIR .. "build/bin/boost_thread-vc142-mt-x64-1_74.dll bin/" .. outdir)
         }
  
     filter {"system:linux"}
