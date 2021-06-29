@@ -90,7 +90,7 @@ project "HandPose"
         postbuildcommands
         {
             ("{COPY} " .. OPENPOSE_DIR .. "build/x64/Debug/openposed.dll bin/" .. outdir),
-            ("{COPY} deps/boost/ bin/" .. outdir),
+            ("{COPY} deps/misc/ bin/" .. outdir),
         }
 
     filter {"system:windows", "configurations:Release"}
