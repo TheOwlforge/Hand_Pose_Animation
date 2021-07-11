@@ -33,19 +33,24 @@ void test_json_parse(void) {
 
   std::array<std::array<float, NUM_KEYPOINTS * 3>, 2> keypoints = json_parse(filename);
 
-  std::array<float, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
-  std::array<float, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
-  
-  // Print each of left/right keypoints: x0, y0, c0, x1, y1, c1, x2, y2, c2, ..., x20, y20, c20
+  print_keypoints(keypoints);
+}
 
-  std::cout << "Left keypoints:" << std::endl;
+void print_keypoints(std::array<std::array<float, NUM_KEYPOINTS * 3>, 2> keypoints)
+{
+    std::array<float, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
+    std::array<float, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
 
-  for (int i = 0; i < NUM_KEYPOINTS; i++) {
-    std::cout << i << " : " << left_keypoints[3*i] << "," << left_keypoints[3*i+1] << "," << left_keypoints[3*i+2] << std::endl; // (x,y, confidence_score)
-  }
-  std::cout << std::endl << "Right keypoints:" << std::endl;
-  
-  for (int i = 0; i < NUM_KEYPOINTS; i++) {
-    std::cout << i << " : " << right_keypoints[3*i] << "," << right_keypoints[3*i+1] << "," << right_keypoints[3*i+2] << std::endl; // (x,y, confidence_score)
-  }
+    // Print each of left/right keypoints: x0, y0, c0, x1, y1, c1, x2, y2, c2, ..., x20, y20, c20
+
+    std::cout << "Left keypoints:" << std::endl;
+
+    for (int i = 0; i < NUM_KEYPOINTS; i++) {
+        std::cout << i << " : " << left_keypoints[3 * i] << "," << left_keypoints[3 * i + 1] << "," << left_keypoints[3 * i + 2] << std::endl; // (x,y, confidence_score)
+    }
+    std::cout << std::endl << "Right keypoints:" << std::endl;
+
+    for (int i = 0; i < NUM_KEYPOINTS; i++) {
+        std::cout << i << " : " << right_keypoints[3 * i] << "," << right_keypoints[3 * i + 1] << "," << right_keypoints[3 * i + 2] << std::endl; // (x,y, confidence_score)
+    }
 }
