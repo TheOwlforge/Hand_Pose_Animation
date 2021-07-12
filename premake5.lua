@@ -19,6 +19,7 @@ project "HandPose"
     CV_LIB = iif(os.istarget("windows"), "x64/vc16/staticlib", "lib")
     CV_INC = iif(os.istarget("windows"), "include", "include/opencv4")
     OPENPOSE_DIR = "deps/OpenPose/"
+    EIGEN_DIR = "deps/Eigen/"
 
     filter "system:linux"
         libdirs
@@ -44,7 +45,8 @@ project "HandPose"
     {
         "src",
         OPENCV_DIR .. CV_INC,
-        OPENPOSE_DIR .. "include"
+        OPENPOSE_DIR .. "include",
+        EIGEN_DIR
     }
    
     libdirs

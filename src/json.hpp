@@ -4160,6 +4160,7 @@ void from_json(const BasicJsonType& j, ArithmeticType& val)
         }
 
         default:
+            std::cout << std::string(j.type_name()) << std::endl;
             JSON_THROW(type_error::create(302, "type must be number, but is " + std::string(j.type_name()), j));
     }
 }

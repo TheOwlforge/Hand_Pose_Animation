@@ -1,6 +1,6 @@
 #pragma once
-#include "pch.h"
 #include "json.hpp"
+#include "mano.h"
 
 #define NUM_KEYPOINTS 21
 
@@ -63,13 +63,68 @@ public:
 		std::cout << "Left keypoints:" << std::endl;
 
 		for (int i = 0; i < NUM_KEYPOINTS; i++) {
-			std::cout << i << " : " << left_keypoints[3 * i] << "," << left_keypoints[3 * i + 1] << "," << left_keypoints[3 * i + 2] << std::endl; // (x,y, confidence_score)
+			std::cout << i << " : " << left_keypoints[3 * i] << ", " << left_keypoints[3 * i + 1] << ", " << left_keypoints[3 * i + 2] << std::endl; // (x,y, confidence_score)
 		}
 		std::cout << std::endl << "Right keypoints:" << std::endl;
 
 		for (int i = 0; i < NUM_KEYPOINTS; i++) {
-			std::cout << i << " : " << right_keypoints[3 * i] << "," << right_keypoints[3 * i + 1] << "," << right_keypoints[3 * i + 2] << std::endl; // (x,y, confidence_score)
+			std::cout << i << " : " << right_keypoints[3 * i] << ", " << right_keypoints[3 * i + 1] << ", " << right_keypoints[3 * i + 2] << std::endl; // (x,y, confidence_score)
 		}
+		std::cout << std::endl;
+	}
+
+	static inline ManoHand* readJsonMANO(std::string filename)
+	{
+		std::cout << "Opening " << filename << std::endl;
+
+		auto start = std::chrono::high_resolution_clock::now();
+
+		// Read json file
+		std::ifstream mano_file(filename);
+		json js = json::parse(mano_file);
+
+		auto end = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double, std::milli> duration = end - start;
+		std::cout << "...took " << duration.count() << " ms." << std::endl << std::endl;
+
+		// parse json file
+		ManoHand* result = new ManoHand;
+
+		for (uint16_t i = 0; i < js["face_indices"].size(); i++)
+		{
+			result->face_indices[i] = Eigen::Vector3i(js["face_indices"][i][0], js["face_indices"][i][1], js["face_indices"][i][2]);
+		}
+		for (uint16_t i = 0; i < js["vertices_template"].size(); i++)
+		{
+			result->T[i] = Eigen::Vector3f(js["vertices_template"][i][0], js["vertices_template"][i][1], js["vertices_template"][i][2]);
+		}
+		for (uint16_t i = 0; i < js["joints"].size(); i++)
+		{
+			result->J[i] = Eigen::Vector3f(js["joints"][i][0], js["joints"][i][1], js["joints"][i][2]);
+		}
+		for (uint16_t j = 0; j < js["weights"].size(); j++)
+		{
+			for (uint16_t i = 0; i < js["weights"][j].size(); i++)
+			{
+				result->W(j, i) = js["weights"][j][i];
+			}
+		}
+		for (uint16_t j = 0; j < js["joint_regressor"].size(); j++)
+		{
+			for (uint16_t i = 0; i < js["joint_regressor"][j].size(); i++)
+			{
+				result->joint_regressor(j, i) = js["joint_regressor"][j][i];
+			}
+		}
+		// std::array<unsigned int, 16> value = js["kinematic_tree"][0];
+		// std::array<unsigned int, 16> key = js["kinematic_tree"][1];
+		for (uint16_t i = 0; i < js["kinematic_tree"][0].size(); i++)
+		{
+			result->kinematic_tree[js["kinematic_tree"][1][i]] = js["kinematic_tree"][0][i];
+		}
+
+
+		return result;
 	}
 
 	static inline bool readVideoCV(const char* filename, cv::VideoCapture& cap)
@@ -160,6 +215,3 @@ private:
 	static std::vector<cv::VideoCapture> caps;
 	static std::vector<cv::VideoWriter> videos;
 };
-
-std::vector<cv::VideoCapture> Parser::caps;
-std::vector<cv::VideoWriter> Parser::videos;
