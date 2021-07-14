@@ -88,43 +88,80 @@ public:
 		std::cout << "...took " << duration.count() << " ms." << std::endl << std::endl;
 
 		// parse json file
-		ManoHand* result = new ManoHand;
+		std::array<Eigen::Vector3d, NUM_MANO_VERTICES> vertices_template;
+		Eigen::Matrix<double, NUM_MANO_VERTICES, NUM_MANO_JOINTS> weights;
+		std::array<Eigen::Vector3d, NUM_MANO_JOINTS> joints;
+		std::array<Eigen::Vector3i, NUM_MANO_FACES> face_indices;
+		std::map<unsigned int, unsigned int>* kinematic_tree = new std::map<unsigned int, unsigned int>();
+		Eigen::Matrix<double, NUM_MANO_JOINTS, NUM_MANO_VERTICES> joint_regressor;
+		Eigen::Matrix<double, NUM_MANO_VERTICES * 3, (NUM_MANO_JOINTS - 1) * 9> pose_blend_shapes;
+		Eigen::Matrix<double, NUM_MANO_VERTICES * 3, MANO_BETA_SIZE> shape_blend_shapes;
 
 		for (uint16_t i = 0; i < js["face_indices"].size(); i++)
 		{
-			result->face_indices[i] = Eigen::Vector3i(js["face_indices"][i][0], js["face_indices"][i][1], js["face_indices"][i][2]);
+			face_indices[i] = Eigen::Vector3i(js["face_indices"][i][0], js["face_indices"][i][1], js["face_indices"][i][2]);
 		}
 		for (uint16_t i = 0; i < js["vertices_template"].size(); i++)
 		{
-			result->T[i] = Eigen::Vector3f(js["vertices_template"][i][0], js["vertices_template"][i][1], js["vertices_template"][i][2]);
+			vertices_template[i] = Eigen::Vector3d(js["vertices_template"][i][0], js["vertices_template"][i][1], js["vertices_template"][i][2]);
 		}
 		for (uint16_t i = 0; i < js["joints"].size(); i++)
 		{
-			result->J[i] = Eigen::Vector3f(js["joints"][i][0], js["joints"][i][1], js["joints"][i][2]);
+			joints[i] = Eigen::Vector3d(js["joints"][i][0], js["joints"][i][1], js["joints"][i][2]);
 		}
 		for (uint16_t j = 0; j < js["weights"].size(); j++)
 		{
 			for (uint16_t i = 0; i < js["weights"][j].size(); i++)
 			{
-				result->W(j, i) = js["weights"][j][i];
+				weights(j, i) = js["weights"][j][i];
 			}
 		}
 		for (uint16_t j = 0; j < js["joint_regressor"].size(); j++)
 		{
 			for (uint16_t i = 0; i < js["joint_regressor"][j].size(); i++)
 			{
-				result->joint_regressor(j, i) = js["joint_regressor"][j][i];
+				joint_regressor(j, i) = js["joint_regressor"][j][i];
+			}
+		}
+
+		for (uint16_t j = 0; j < NUM_MANO_VERTICES; j++)
+		{
+			for (uint16_t i = 0; i < MANO_R_SIZE; i++)
+			{
+				pose_blend_shapes(3 * j, i) = js["pose_blend_shapes"][j][0][i];
+				pose_blend_shapes(3 * j + 1, i) = js["pose_blend_shapes"][j][1][i];
+				pose_blend_shapes(3 * j + 2, i) = js["pose_blend_shapes"][j][2][i];
+			}
+		}
+		for (uint16_t j = 0; j < NUM_MANO_VERTICES; j++)
+		{
+			for (uint16_t i = 0; i < MANO_BETA_SIZE; i++)
+			{
+				shape_blend_shapes(3 * j, i) = js["shape_blend_shapes"][j][0][i];
+				shape_blend_shapes(3 * j + 1, i) = js["shape_blend_shapes"][j][1][i];
+				shape_blend_shapes(3 * j + 2, i) = js["shape_blend_shapes"][j][2][i];
 			}
 		}
 		// std::array<unsigned int, 16> value = js["kinematic_tree"][0];
 		// std::array<unsigned int, 16> key = js["kinematic_tree"][1];
 		for (uint16_t i = 0; i < js["kinematic_tree"][0].size(); i++)
 		{
-			result->kinematic_tree[js["kinematic_tree"][1][i]] = js["kinematic_tree"][0][i];
+			(*kinematic_tree)[js["kinematic_tree"][1][i]] = js["kinematic_tree"][0][i];
 		}
 
+		ManoHand hand = {vertices_template, weights, joints, face_indices, kinematic_tree, joint_regressor, pose_blend_shapes, shape_blend_shapes};
+		ManoHand* result = (ManoHand*)malloc(sizeof(ManoHand));
+		memcpy(result, &hand, sizeof(ManoHand));
 
 		return result;
+	}
+
+	static inline void print_map(const std::map<unsigned int, unsigned int>& m)
+	{
+		for (const auto& [key, value] : m) {
+			std::cout << key << " = " << value << "; ";
+		}
+		std::cout << "\n";
 	}
 
 	static inline bool readVideoCV(const char* filename, cv::VideoCapture& cap)
