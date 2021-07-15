@@ -89,13 +89,13 @@ public:
 
 		// parse json file
 		std::array<Eigen::Vector3f, NUM_MANO_VERTICES> vertices_template;
-		Eigen::Matrix<float, NUM_MANO_VERTICES, NUM_MANO_JOINTS> weights;
+		Eigen::MatrixXf weights(NUM_MANO_VERTICES, NUM_MANO_JOINTS);
 		std::array<Eigen::Vector3f, NUM_MANO_JOINTS> joints;
 		std::array<Eigen::Vector3i, NUM_MANO_FACES> face_indices;
 		std::map<unsigned int, unsigned int>* kinematic_tree = new std::map<unsigned int, unsigned int>();
-		Eigen::Matrix<float, NUM_MANO_JOINTS, NUM_MANO_VERTICES> joint_regressor;
-		Eigen::Matrix<float, NUM_MANO_VERTICES * 3, (NUM_MANO_JOINTS - 1) * 9> pose_blend_shapes;
-		Eigen::Matrix<float, NUM_MANO_VERTICES * 3, MANO_BETA_SIZE> shape_blend_shapes;
+		Eigen::MatrixXf joint_regressor(NUM_MANO_JOINTS, NUM_MANO_VERTICES);
+		Eigen::MatrixXf pose_blend_shapes(NUM_MANO_VERTICES * 3, (NUM_MANO_JOINTS - 1) * 9);
+		Eigen::MatrixXf shape_blend_shapes(NUM_MANO_VERTICES * 3, MANO_BETA_SIZE);
 
 		for (uint16_t i = 0; i < js["face_indices"].size(); i++)
 		{
@@ -149,9 +149,7 @@ public:
 			(*kinematic_tree)[js["kinematic_tree"][1][i]] = js["kinematic_tree"][0][i];
 		}
 
-		ManoHand hand = {vertices_template, weights, joints, face_indices, kinematic_tree, joint_regressor, pose_blend_shapes, shape_blend_shapes};
-		ManoHand* result = (ManoHand*)malloc(sizeof(ManoHand));
-		memcpy(result, &hand, sizeof(ManoHand));
+		ManoHand* result = new ManoHand(vertices_template, weights, joints, face_indices, kinematic_tree, joint_regressor, pose_blend_shapes, shape_blend_shapes);
 
 		return result;
 	}
@@ -189,7 +187,7 @@ public:
 	static inline bool getNextFrameRaw(cv::VideoCapture& cap, T* frame)
 	{
 		cv::Mat frame;
-		if(getNextFrameCV(cap, frame))
+		if (getNextFrameCV(cap, frame))
 		{
 			frame = (T*)frame.data;
 			return true;

@@ -14,18 +14,20 @@ int main(int argc, char* argv[])
 
 	std::cout << sizeof(float) << ", " << sizeof(ManoHand) << std::endl;
 
-	HandModel hands("mano/model/mano_right.json", "mano/model/mano_left.json");
-
-	
+	HandModel* hands = new HandModel("mano/model/mano_right.json", "mano/model/mano_left.json");
 
 	std::array<float, MANO_THETA_SIZE> rnd1 = {};
 	std::array<float, MANO_BETA_SIZE> rnd2 = {};
 
-	HandModel::fillRandom(&rnd2, 2);
+	//HandModel::fillRandom(&rnd1, 0.5);
+	rnd1[0] = 1;
+	rnd1[3] = 1;
 
-	hands.setModelParameters(rnd1, rnd2, Hand::RIGHT);
-	hands.applyTransformation(Eigen::Vector3f(0, 0, 0.5), Hand::LEFT);
-	hands.saveVertices();
-	hands.saveMANOJoints();
-	hands.saveOPJoints();
+	hands->setModelParameters(rnd1, rnd2, Hand::RIGHT);
+	hands->applyTransformation(Eigen::Vector3f(0, 0, 0.5), Hand::LEFT);
+	hands->saveVertices();
+	hands->saveMANOJoints();
+	hands->saveOPJoints();
+
+	delete hands;
 }

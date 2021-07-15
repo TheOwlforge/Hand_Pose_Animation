@@ -43,8 +43,8 @@ HandModel::HandModel(std::string rightHand_filename, std::string leftHand_filena
 
 HandModel::~HandModel()
 {
-	free(rightHand);
-	free(leftHand);
+	delete rightHand;
+	delete leftHand;
 }
 
 /*concurrency::parallel_for(size_t(0), (size_t)NUM_MANO_VERTICES, [&](size_t i)
@@ -133,14 +133,14 @@ void HandModel::setModelParameters(std::array<float, MANO_THETA_SIZE> theta, std
 	}
 
 	//update joints by calculating J_Reg * Vertices
-	Eigen::Matrix<float, NUM_MANO_VERTICES, 3> v_matrix = Eigen::Matrix<float, NUM_MANO_VERTICES, 3>::Zero();
+	Eigen::MatrixXf v_matrix(NUM_MANO_VERTICES, 3);
 	for (int i = 0; i < NUM_MANO_VERTICES; i++)
 	{
 		v_matrix(i, 0) = h->vertices[i].x();
 		v_matrix(i, 1) = h->vertices[i].y();
 		v_matrix(i, 2) = h->vertices[i].z();
 	}
-	Eigen::Matrix<float, NUM_MANO_JOINTS, 3> joints_matrix = h->joint_regressor * v_matrix;
+	Eigen::MatrixXf joints_matrix = h->joint_regressor * v_matrix; // dimension NUM_MANO_JOINTS * 3
 	for (int j = 0; j < NUM_MANO_JOINTS; j++)
 	{
 		h->joints[j] = Eigen::Vector4f(joints_matrix(j, 0), joints_matrix(j, 1), joints_matrix(j, 2), 1);
@@ -246,7 +246,7 @@ bool HandModel::saveVertices()
 		for (int i = 0; i < NUM_MANO_FACES; i++)
 		{
 			// add number of vertices to correct face indices to save both in the same obj files
-			Eigen::Vector3i f = leftHand->face_indices[i] + (isVisible_right * NUM_MANO_VERTICES)*Eigen::Vector3i::Ones();
+			Eigen::Vector3i f = leftHand->face_indices[i] + (isVisible_right * NUM_MANO_VERTICES) * Eigen::Vector3i::Ones();
 			outFile << "f " << f.x() << " " << f.y() << " " << f.z() << std::endl;
 		}
 	}
@@ -418,17 +418,32 @@ unsigned int HandModel::getAncestor(ManoHand* h, unsigned int joint_index)
 Eigen::Matrix4f HandModel::computeG(ManoHand* h, unsigned int joint_index)
 {
 	Eigen::Matrix4f G_k = Eigen::Matrix4f::Identity();
+
+	if (joint_index == 0)
+	{
+		G_k.block<3, 3>(0, 0) = rodrigues(Eigen::Vector3f(h->theta[joint_index * 3], h->theta[joint_index * 3 + 1], h->theta[joint_index * 3 + 2]));
+		G_k.block<3, 1>(0, 3) = Eigen::Vector3f(h->joints[joint_index].x(), h->joints[joint_index].y(), h->joints[joint_index].z());
+		return G_k;
+	}
+
 	unsigned int current_idx = joint_index;
+	std::vector<unsigned int> ancestors;
 	while (hasAncestor(h, current_idx))
 	{
-		Eigen::Matrix4f A = Eigen::Matrix4f::Identity();
 		unsigned int j = getAncestor(h, current_idx);
+		ancestors.push_back(j);
+		current_idx = j;
+	}
+
+	//size is larger 1 as root is handled beforehand
+	for (int j = ancestors[ancestors.size() - 1]; j >= 0; j--)
+	{
+		Eigen::Matrix4f A = Eigen::Matrix4f::Identity();
 
 		A.block<3, 3>(0, 0) = rodrigues(Eigen::Vector3f(h->theta[j * 3], h->theta[j * 3 + 1], h->theta[j * 3 + 2]));
 		A.block<3, 1>(0, 3) = Eigen::Vector3f(h->joints[j].x(), h->joints[j].y(), h->joints[j].z());
 
 		G_k *= A;
-		current_idx = j;
 	}
 	return G_k;
 }
@@ -449,6 +464,8 @@ Eigen::Matrix3f HandModel::rodrigues(Eigen::Vector3f w)
 	skew << 0, -w_normalized.z(), w_normalized.y(),
 		w_normalized.z(), 0, -w_normalized.x(),
 		-w_normalized.y(), w_normalized.x(), 0;
+	//skew *= -1;
+	//skew.transposeInPlace();
 
 	Eigen::Matrix3f result = Eigen::Matrix3f::Identity() + skew * sin(w_length) + (skew * skew) * cos(w_length);
 	return result;
