@@ -88,14 +88,14 @@ public:
 		std::cout << "...took " << duration.count() << " ms." << std::endl << std::endl;
 
 		// parse json file
-		std::array<Eigen::Vector3d, NUM_MANO_VERTICES> vertices_template;
-		Eigen::Matrix<double, NUM_MANO_VERTICES, NUM_MANO_JOINTS> weights;
-		std::array<Eigen::Vector3d, NUM_MANO_JOINTS> joints;
+		std::array<Eigen::Vector3f, NUM_MANO_VERTICES> vertices_template;
+		Eigen::Matrix<float, NUM_MANO_VERTICES, NUM_MANO_JOINTS> weights;
+		std::array<Eigen::Vector3f, NUM_MANO_JOINTS> joints;
 		std::array<Eigen::Vector3i, NUM_MANO_FACES> face_indices;
 		std::map<unsigned int, unsigned int>* kinematic_tree = new std::map<unsigned int, unsigned int>();
-		Eigen::Matrix<double, NUM_MANO_JOINTS, NUM_MANO_VERTICES> joint_regressor;
-		Eigen::Matrix<double, NUM_MANO_VERTICES * 3, (NUM_MANO_JOINTS - 1) * 9> pose_blend_shapes;
-		Eigen::Matrix<double, NUM_MANO_VERTICES * 3, MANO_BETA_SIZE> shape_blend_shapes;
+		Eigen::Matrix<float, NUM_MANO_JOINTS, NUM_MANO_VERTICES> joint_regressor;
+		Eigen::Matrix<float, NUM_MANO_VERTICES * 3, (NUM_MANO_JOINTS - 1) * 9> pose_blend_shapes;
+		Eigen::Matrix<float, NUM_MANO_VERTICES * 3, MANO_BETA_SIZE> shape_blend_shapes;
 
 		for (uint16_t i = 0; i < js["face_indices"].size(); i++)
 		{
@@ -103,11 +103,11 @@ public:
 		}
 		for (uint16_t i = 0; i < js["vertices_template"].size(); i++)
 		{
-			vertices_template[i] = Eigen::Vector3d(js["vertices_template"][i][0], js["vertices_template"][i][1], js["vertices_template"][i][2]);
+			vertices_template[i] = Eigen::Vector3f(js["vertices_template"][i][0], js["vertices_template"][i][1], js["vertices_template"][i][2]);
 		}
 		for (uint16_t i = 0; i < js["joints"].size(); i++)
 		{
-			joints[i] = Eigen::Vector3d(js["joints"][i][0], js["joints"][i][1], js["joints"][i][2]);
+			joints[i] = Eigen::Vector3f(js["joints"][i][0], js["joints"][i][1], js["joints"][i][2]);
 		}
 		for (uint16_t j = 0; j < js["weights"].size(); j++)
 		{
