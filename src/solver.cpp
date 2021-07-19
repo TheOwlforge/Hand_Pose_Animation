@@ -13,8 +13,9 @@
 
 struct EnergyFunction
 {
-  EnergyFunction(const float weight, const float x, const float y)
+	EnergyFunction(const float weight, const float x, const float y)
 	{
+		
 	}
 
 	template<typename T>
@@ -41,7 +42,7 @@ struct EnergyFunction
 
 	  return true;
 	}
-};
+};	
  
 
 int main(int argc, char **argv) {
