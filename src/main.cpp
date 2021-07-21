@@ -21,7 +21,12 @@ int main(int argc, char* argv[])
 
 	HandModel::fillRandom(&rnd1, 0.5);
 	//rnd1[0] = 1;
-	//rnd1[3] = 1;
+	/*rnd1[5] = 2;
+	rnd1[8] = 0.2;
+	rnd1[11] = 0.1;
+	rnd1[32] = 2;
+	rnd1[23] = 2;
+	rnd1[41] = 2;*/
 
 	/*for (uint16_t i = 0; i < (NUM_MANO_JOINTS - 1) * 3; i++)
 	{
@@ -29,7 +34,7 @@ int main(int argc, char* argv[])
 	}*/
 
 	hands->setModelParameters(rnd1, rnd2, Hand::RIGHT);
-	hands->applyTransformation(Eigen::Vector3f(0, 0, 0.5), Hand::LEFT);
+	hands->applyTransformation(Eigen::Vector3f(0, 0, 0.2), Hand::LEFT);
 	hands->saveVertices();
 	hands->saveMANOJoints();
 	hands->saveOPJoints();
