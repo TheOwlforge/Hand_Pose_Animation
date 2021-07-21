@@ -34,7 +34,7 @@ HandModel::HandModel(std::string rightHand_filename, std::string leftHand_filena
 		rightHand->inv_G_zero[k] = computeG(rightHand, k).inverse();
 		leftHand->inv_G_zero[k] = computeG(leftHand, k).inverse();
 	}
-	for (int k = 0; k < NUM_MANO_JOINTS - 1; k++)
+	for (int k = 1; k < NUM_MANO_JOINTS; k++)
 	{
 		rightHand->R_zero[k] = computeR(rightHand, k);
 		leftHand->R_zero[k] = computeR(leftHand, k);
@@ -43,8 +43,8 @@ HandModel::HandModel(std::string rightHand_filename, std::string leftHand_filena
 
 HandModel::~HandModel()
 {
-	delete rightHand;
-	delete leftHand;
+	//delete rightHand;
+	//delete leftHand;
 }
 
 /*concurrency::parallel_for(size_t(0), (size_t)NUM_MANO_VERTICES, [&](size_t i)
@@ -90,7 +90,7 @@ void HandModel::setModelParameters(std::array<float, MANO_THETA_SIZE> theta, std
 
 	//compute pose offsets via Bp = sum((R_theta - R_theta_zero) * P_n)
 	Eigen::Vector<float, MANO_R_SIZE> R;
-	for (int j = 0; j < (NUM_MANO_JOINTS - 1); j++)
+	for (int j = 1; j < NUM_MANO_JOINTS; j++)
 	{
 		Eigen::Vector<float, 9> R_current = computeR(h, j) - h->R_zero[j];
 		for (int i = 0; i < 9; i++)
@@ -152,7 +152,7 @@ void HandModel::setModelParameters(std::array<float, MANO_THETA_SIZE> theta, std
 	std::cout << "...took " << duration.count() << " ms." << std::endl << std::endl;
 }
 
-std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand)
+std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand, SimpleCamera camera)
 {
 	ManoHand* h;
 	switch (hand)
@@ -166,14 +166,18 @@ std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLo
 	}
 
 	std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> result{};
+	std::array<int, NUM_MANO_JOINTS> opIndex = { 0, 5, 6, 7, 9, 10, 11, 17, 18, 19, 13, 14, 15, 1, 2, 3 };
 	for (int j = 0; j < NUM_MANO_JOINTS; j++)
 	{
-		result[j] = { h->joints[j].x(), h->joints[j].y() };
+		result[opIndex[j]] = { h->joints[j].x() * camera.f_x / h->joints[j].z() + camera.m_x, 
+							   h->joints[j].y() * camera.f_y / h->joints[j].z() + camera.m_y };
 	}
 	// add 5 additional joints for openpose
+	std::array<int, 5> opIndexAdd = { 4, 8, 12, 16, 20};
 	for (int j = 0; j < 5; j++)
 	{
-		result[NUM_MANO_JOINTS + j] = { h->vertices[ADDITIONAL_JOINTS[j]].x(), h->vertices[ADDITIONAL_JOINTS[j]].y() };
+		result[opIndexAdd[j]] = { h->vertices[ADDITIONAL_JOINTS[j]].x() * camera.f_x / h->vertices[ADDITIONAL_JOINTS[j]].z() + camera.m_x,
+								  h->vertices[ADDITIONAL_JOINTS[j]].y() * camera.f_y / h->vertices[ADDITIONAL_JOINTS[j]].z() + camera.m_y };
 	}
 	return result;
 }
@@ -218,7 +222,7 @@ bool HandModel::saveVertices()
 		for (int i = 0; i < NUM_MANO_VERTICES; i++)
 		{
 			Eigen::Vector4f v = rightHand->vertices[i];
-			outFile << "v " << v.x() << " " << v.y() << " " << v.z() << std::endl;
+			outFile << "v " << v.x() << " " << v.y() << " " << v.z() << " " << rightHand->W(i, 1) * 255 << " " << rightHand->W(i, 2) * 255 << " " << rightHand->W(i, 3) * 255 << std::endl;
 		}
 	}
 	// left Hand vertices
@@ -227,7 +231,7 @@ bool HandModel::saveVertices()
 		for (int i = 0; i < NUM_MANO_VERTICES; i++)
 		{
 			Eigen::Vector4f v = leftHand->vertices[i];
-			outFile << "v " << v.x() << " " << v.y() << " " << v.z() << std::endl;
+			outFile << "v " << v.x() << " " << v.y() << " " << v.z() << " " << leftHand->W(i, 1) * 255 << " " << leftHand->W(i, 2) * 255 << " " << leftHand->W(i, 3) * 255 << std::endl;
 		}
 
 	}
@@ -256,6 +260,30 @@ bool HandModel::saveVertices()
 	return true;
 }
 
+void writeCubeVertices(std::ofstream& file, Eigen::VectorXf v, float offset = 0.001)
+{
+
+	file << v.x() - offset << " " << v.y() - offset << " " << v.z() + offset << std::endl;
+	file << v.x() + offset << " " << v.y() - offset << " " << v.z() + offset << std::endl;
+	file << v.x() - offset << " " << v.y() + offset << " " << v.z() + offset << std::endl;
+	file << v.x() + offset << " " << v.y() + offset << " " << v.z() + offset << std::endl;
+	file << v.x() - offset << " " << v.y() - offset << " " << v.z() - offset << std::endl;
+	file << v.x() + offset << " " << v.y() - offset << " " << v.z() - offset << std::endl;
+	file << v.x() - offset << " " << v.y() + offset << " " << v.z() - offset << std::endl;
+	file << v.x() + offset << " " << v.y() + offset << " " << v.z() - offset << std::endl;
+}
+
+void writeCubeFaces(std::ofstream& file, int i)
+{
+
+	file << 4 << " " << i * 8 << " " << i * 8 + 1 << " " << i * 8 + 3 << " " << i * 8 + 2 << " " << 255 << " " << 0 << " " << 0 << std::endl;
+	file << 4 << " " << i * 8 + 4 << " " << i * 8 + 5 << " " << i * 8 + 7 << " " << i * 8 + 6 << " " << 255 << " " << 0 << " " << 0 << std::endl;
+	file << 4 << " " << i * 8 << " " << i * 8 + 2 << " " << i * 8 + 4 << " " << i * 8 + 6 << " " << 255 << " " << 0 << " " << 0 << std::endl;
+	file << 4 << " " << i * 8 + 2 << " " << i * 8 + 3 << " " << i * 8 + 6 << " " << i * 8 + 7 << " " << 255 << " " << 0 << " " << 0 << std::endl;
+	file << 4 << " " << i * 8 + 1 << " " << i * 8 + 3 << " " << i * 8 + 5 << " " << i * 8 + 7 << " " << 255 << " " << 0 << " " << 0 << std::endl;
+	file << 4 << " " << i * 8 << " " << i * 8 + 1 << " " << i * 8 + 4 << " " << i * 8 + 5 << " " << 255 << " " << 0 << " " << 0 << std::endl;
+}
+
 bool HandModel::saveMANOJoints()
 {
 	std::string output_filename = "jointsMANO.off";
@@ -265,19 +293,15 @@ bool HandModel::saveMANOJoints()
 	if (!jointsFile.is_open()) return false;
 
 	jointsFile << "OFF" << std::endl;
-	jointsFile << NUM_MANO_JOINTS * (isVisible_left + isVisible_right) * 4 << " " << NUM_MANO_JOINTS * (isVisible_left + isVisible_right) << " 0" << std::endl;
+	jointsFile << NUM_MANO_JOINTS * (isVisible_left + isVisible_right) * 8 << " " << NUM_MANO_JOINTS * (isVisible_left + isVisible_right) * 6 << " 0" << std::endl;
 
-	float offset = 0.001;
 	// right Hand vertices
 	if (isVisible_right)
 	{
 		for (int i = 0; i < NUM_MANO_JOINTS; i++)
 		{
 			Eigen::Vector4f v = rightHand->joints[i];
-			jointsFile << v.x() - offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() - offset << " " << v.y() + offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() + offset << " " << v.z() << std::endl;
+			writeCubeVertices(jointsFile, v);
 		}
 	}
 	// left Hand vertices
@@ -286,10 +310,7 @@ bool HandModel::saveMANOJoints()
 		for (int i = 0; i < NUM_MANO_JOINTS; i++)
 		{
 			Eigen::Vector4f v = leftHand->joints[i];
-			jointsFile << v.x() - offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() - offset << " " << v.y() + offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() + offset << " " << v.z() << std::endl;
+			writeCubeVertices(jointsFile, v);
 		}
 
 	}
@@ -298,7 +319,7 @@ bool HandModel::saveMANOJoints()
 	{
 		for (int i = 0; i < NUM_MANO_JOINTS; i++)
 		{
-			jointsFile << 4 << " " << i * 4 << " " << i * 4 + 1 << " " << i * 4 + 3 << " " << i * 4 + 2 << " " << 255 << " " << 0 << " " << 0 << std::endl;
+			writeCubeFaces(jointsFile, i);
 		}
 	}
 	// left Hand faces
@@ -307,7 +328,7 @@ bool HandModel::saveMANOJoints()
 		int o = isVisible_right * NUM_MANO_JOINTS * 4;
 		for (int i = 0; i < NUM_MANO_JOINTS; i++)
 		{
-			jointsFile << 4 << " " << o + i * 4 << " " << o + i * 4 + 1 << " " << o + i * 4 + 3 << " " << o + i * 4 + 2 << " " << 0 << " " << 0 << " " << 255 << std::endl;
+			writeCubeFaces(jointsFile, i);
 		}
 	}
 
@@ -325,9 +346,8 @@ bool HandModel::saveOPJoints()
 	if (!jointsFile.is_open()) return false;
 
 	jointsFile << "OFF" << std::endl;
-	jointsFile << NUM_OPENPOSE_KEYPOINTS * (isVisible_left + isVisible_right) * 4 << " " << NUM_OPENPOSE_KEYPOINTS * (isVisible_left + isVisible_right) << " 0" << std::endl;
+	jointsFile << NUM_OPENPOSE_KEYPOINTS * (isVisible_left + isVisible_right) * 8 << " " << NUM_OPENPOSE_KEYPOINTS * (isVisible_left + isVisible_right) * 6 << " 0" << std::endl;
 
-	float offset = 0.001;
 	// right Hand vertices
 	jointsFile << "# right hand vertices" << std::endl;
 	if (isVisible_right)
@@ -336,20 +356,14 @@ bool HandModel::saveOPJoints()
 		for (int i = 0; i < NUM_MANO_JOINTS; i++)
 		{
 			Eigen::Vector4f v = rightHand->joints[i];
-			jointsFile << v.x() - offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() - offset << " " << v.y() + offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() + offset << " " << v.z() << std::endl;
+			writeCubeVertices(jointsFile, v);
 		}
 		// add 5 additional joints for openpose
 		jointsFile << "# OpenPose" << std::endl;
 		for (int j = 0; j < 5; j++)
 		{
 			Eigen::Vector4f v = rightHand->vertices[ADDITIONAL_JOINTS[j]];
-			jointsFile << v.x() - offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() - offset << " " << v.y() + offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() + offset << " " << v.z() << std::endl;
+			writeCubeVertices(jointsFile, v);
 		}
 	}
 	// left Hand vertices
@@ -360,20 +374,14 @@ bool HandModel::saveOPJoints()
 		for (int i = 0; i < NUM_MANO_JOINTS; i++)
 		{
 			Eigen::Vector4f v = leftHand->joints[i];
-			jointsFile << v.x() - offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() - offset << " " << v.y() + offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() + offset << " " << v.z() << std::endl;
+			writeCubeVertices(jointsFile, v);
 		}
 		// add 5 additional joints for openpose
 		jointsFile << "# OpenPose" << std::endl;
 		for (int j = 0; j < 5; j++)
 		{
 			Eigen::Vector4f v = leftHand->vertices[ADDITIONAL_JOINTS[j]];
-			jointsFile << v.x() - offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() - offset << " " << v.z() << std::endl;
-			jointsFile << v.x() - offset << " " << v.y() + offset << " " << v.z() << std::endl;
-			jointsFile << v.x() + offset << " " << v.y() + offset << " " << v.z() << std::endl;
+			writeCubeVertices(jointsFile, v);
 		}
 	}
 	// right Hand faces
@@ -382,7 +390,7 @@ bool HandModel::saveOPJoints()
 	{
 		for (int i = 0; i < NUM_OPENPOSE_KEYPOINTS; i++)
 		{
-			jointsFile << 4 << " " << i * 4 << " " << i * 4 + 1 << " " << i * 4 + 3 << " " << i * 4 + 2 << " " << 255 << " " << 0 << " " << 0 << std::endl;
+			writeCubeFaces(jointsFile, i);
 		}
 	}
 	// left Hand faces
@@ -392,7 +400,7 @@ bool HandModel::saveOPJoints()
 		int o = isVisible_right * NUM_OPENPOSE_KEYPOINTS * 4;
 		for (int i = 0; i < NUM_OPENPOSE_KEYPOINTS; i++)
 		{
-			jointsFile << 4 << " " << o + i * 4 << " " << o + i * 4 + 1 << " " << o + i * 4 + 3 << " " << o + i * 4 + 2 << " " << 0 << " " << 0 << " " << 255 << std::endl;
+			writeCubeFaces(jointsFile, i);
 		}
 	}
 
@@ -422,12 +430,13 @@ Eigen::Matrix4f HandModel::computeG(ManoHand* h, unsigned int joint_index)
 	if (joint_index == 0)
 	{
 		G_k.block<3, 3>(0, 0) = rodrigues(Eigen::Vector3f(h->theta[joint_index * 3], h->theta[joint_index * 3 + 1], h->theta[joint_index * 3 + 2]));
-		G_k.block<3, 1>(0, 3) = Eigen::Vector3f(h->joints[joint_index].x(), h->joints[joint_index].y(), h->joints[joint_index].z());
+		G_k.block<3, 1>(0, 3) = h->J[joint_index] - Eigen::Vector3f(h->joints[joint_index].x(), h->joints[joint_index].y(), h->joints[joint_index].z());
 		return G_k;
 	}
 
 	unsigned int current_idx = joint_index;
 	std::vector<unsigned int> ancestors;
+	ancestors.push_back(joint_index);
 	while (hasAncestor(h, current_idx))
 	{
 		unsigned int j = getAncestor(h, current_idx);
@@ -435,7 +444,8 @@ Eigen::Matrix4f HandModel::computeG(ManoHand* h, unsigned int joint_index)
 		current_idx = j;
 	}
 
-	//size is larger 1 as root is handled beforehand
+
+	//size is >= 1 as root is handled beforehand
 	for (int j = ancestors[ancestors.size() - 1]; j >= 0; j--)
 	{
 		Eigen::Matrix4f A = Eigen::Matrix4f::Identity();
@@ -467,6 +477,6 @@ Eigen::Matrix3f HandModel::rodrigues(Eigen::Vector3f w)
 	//skew *= -1;
 	//skew.transposeInPlace();
 
-	Eigen::Matrix3f result = Eigen::Matrix3f::Identity() + skew * sin(w_length) + (skew * skew) * cos(w_length);
+	Eigen::Matrix3f result = Eigen::Matrix3f::Identity() + skew * sin(w_length) + (skew * skew) * (1 - cos(w_length));
 	return result;
 }

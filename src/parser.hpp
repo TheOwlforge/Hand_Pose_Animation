@@ -94,6 +94,7 @@ public:
 		std::array<Eigen::Vector3i, NUM_MANO_FACES> face_indices;
 		std::map<unsigned int, unsigned int>* kinematic_tree = new std::map<unsigned int, unsigned int>();
 		Eigen::MatrixXf joint_regressor(NUM_MANO_JOINTS, NUM_MANO_VERTICES);
+		std::array<float, (NUM_MANO_JOINTS - 1) * 3> hands_mean;
 		Eigen::MatrixXf pose_blend_shapes(NUM_MANO_VERTICES * 3, (NUM_MANO_JOINTS - 1) * 9);
 		Eigen::MatrixXf shape_blend_shapes(NUM_MANO_VERTICES * 3, MANO_BETA_SIZE);
 
@@ -123,7 +124,10 @@ public:
 				joint_regressor(j, i) = js["joint_regressor"][j][i];
 			}
 		}
-
+		for (uint16_t j = 0; j < js["hands_mean"].size(); j++)
+		{
+			hands_mean[j] = js["hands_mean"][j];
+		}
 		for (uint16_t j = 0; j < NUM_MANO_VERTICES; j++)
 		{
 			for (uint16_t i = 0; i < MANO_R_SIZE; i++)
@@ -149,7 +153,7 @@ public:
 			(*kinematic_tree)[js["kinematic_tree"][1][i]] = js["kinematic_tree"][0][i];
 		}
 
-		ManoHand* result = new ManoHand(vertices_template, weights, joints, face_indices, kinematic_tree, joint_regressor, pose_blend_shapes, shape_blend_shapes);
+		ManoHand* result = new ManoHand(vertices_template, weights, joints, face_indices, kinematic_tree, joint_regressor, hands_mean, pose_blend_shapes, shape_blend_shapes);
 
 		return result;
 	}

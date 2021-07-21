@@ -1,9 +1,10 @@
 #pragma once
+#include "camera.h"
 
 constexpr int NUM_MANO_VERTICES = 778;
 constexpr int NUM_MANO_JOINTS = 16;
 constexpr int NUM_MANO_FACES = 1538;
-constexpr int MANO_THETA_SIZE = (NUM_MANO_JOINTS - 1) * 3;
+constexpr int MANO_THETA_SIZE = NUM_MANO_JOINTS * 3;
 constexpr int MANO_BETA_SIZE = 10;
 constexpr int MANO_R_SIZE = (NUM_MANO_JOINTS - 1) * 9;
 constexpr int NUM_OPENPOSE_KEYPOINTS = 21;
@@ -30,8 +31,8 @@ struct ManoHand
 	const Eigen::MatrixXf joint_regressor; // dimension 16 * 778
 
 	/*const std::array<float, 1554 * 45> hands_coefficients;
-	const std::array<float, 45 * 45> hands_components;
-	const std::array<float, 45> hands_mean;*/
+	const std::array<float, 45 * 45> hands_components;*/
+	const std::array<float, (NUM_MANO_JOINTS - 1) * 3> hands_mean;
 
 	const Eigen::MatrixXf pose_blend_shapes; // dimension (778 * 3) * 135 (-> 15 * 9 = 135)
 	const Eigen::MatrixXf shape_blend_shapes; // dimension (778 * 3) * 10
@@ -50,9 +51,10 @@ struct ManoHand
 		std::array<Eigen::Vector3i, NUM_MANO_FACES>& f,
 		std::map<unsigned int, unsigned int>* kt,
 		Eigen::MatrixXf& jr,
+		std::array<float, (NUM_MANO_JOINTS - 1) * 3> hm,
 		Eigen::MatrixXf& p,
 		Eigen::MatrixXf& s)
-		: T(t), J(j), W(w), face_indices(f), kinematic_tree(kt), joint_regressor(jr), pose_blend_shapes(p), shape_blend_shapes(s)
+		: T(t), J(j), W(w), face_indices(f), kinematic_tree(kt), joint_regressor(jr), hands_mean(hm), pose_blend_shapes(p), shape_blend_shapes(s)
 	{ }
 
 	~ManoHand()
@@ -78,7 +80,7 @@ public:
 
 	void setModelParameters(std::array<float, MANO_THETA_SIZE> theta, std::array<float, MANO_BETA_SIZE> beta, Hand hand);
 
-	std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand);
+	std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand, SimpleCamera camera);
 	void applyTransformation(Eigen::Vector3f t, Hand hand);
 
 	bool saveVertices();
