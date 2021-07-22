@@ -63,6 +63,9 @@ def load_model(fname_or_dict='MANO_LEFT.pkl', ncomps=6, flat_hand_mean=False, v_
 
     pose_coeffs = ch.zeros(rot + selected_components.shape[0])
     full_hand_pose = pose_coeffs[rot:(rot+ncomps)].dot(selected_components)
+    
+    #Found out, why has pose only 9 parameters, when we expected 45
+    #print('pose: ', np.size(pose_coeffs), ' full pose: ', np.size(full_hand_pose)) 
 
     raw_model_data['fullpose'] = ch.concatenate((pose_coeffs[:rot], hands_mean + full_hand_pose))
     raw_model_data['pose'] = pose_coeffs
@@ -155,6 +158,8 @@ if __name__ == '__main__':
     m.pose[:] = np.random.rand(m.pose.size) * 4 - 2
     # m.pose[:3] = [0., 0., 0.]
     # m.pose[3:] = [-0.42671473, -0.85829819, -0.50662164, +1.97374622, -0.84298473, -1.29958491]
+    # m.pose[:3] = [-1., -1., 1.]
+    # m.pose[3:] = [1., 1., 1., 1., 1., 1.]
     # the first 3 elements correspond to global rotation
     # the next ncomps to the hand pose
 
