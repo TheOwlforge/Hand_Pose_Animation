@@ -88,43 +88,82 @@ public:
 		std::cout << "...took " << duration.count() << " ms." << std::endl << std::endl;
 
 		// parse json file
-		ManoHand* result = new ManoHand;
+		std::array<Eigen::Vector3f, NUM_MANO_VERTICES> vertices_template;
+		Eigen::MatrixXf weights(NUM_MANO_VERTICES, NUM_MANO_JOINTS);
+		std::array<Eigen::Vector3f, NUM_MANO_JOINTS> joints;
+		std::array<Eigen::Vector3i, NUM_MANO_FACES> face_indices;
+		std::map<unsigned int, unsigned int>* kinematic_tree = new std::map<unsigned int, unsigned int>();
+		Eigen::MatrixXf joint_regressor(NUM_MANO_JOINTS, NUM_MANO_VERTICES);
+		std::array<float, (NUM_MANO_JOINTS - 1) * 3> hands_mean;
+		Eigen::MatrixXf pose_blend_shapes(NUM_MANO_VERTICES * 3, (NUM_MANO_JOINTS - 1) * 9);
+		Eigen::MatrixXf shape_blend_shapes(NUM_MANO_VERTICES * 3, MANO_BETA_SIZE);
 
 		for (uint16_t i = 0; i < js["face_indices"].size(); i++)
 		{
-			result->face_indices[i] = Eigen::Vector3i(js["face_indices"][i][0], js["face_indices"][i][1], js["face_indices"][i][2]);
+			face_indices[i] = Eigen::Vector3i(js["face_indices"][i][0], js["face_indices"][i][1], js["face_indices"][i][2]);
 		}
 		for (uint16_t i = 0; i < js["vertices_template"].size(); i++)
 		{
-			result->T[i] = Eigen::Vector3f(js["vertices_template"][i][0], js["vertices_template"][i][1], js["vertices_template"][i][2]);
+			vertices_template[i] = Eigen::Vector3f(js["vertices_template"][i][0], js["vertices_template"][i][1], js["vertices_template"][i][2]);
 		}
 		for (uint16_t i = 0; i < js["joints"].size(); i++)
 		{
-			result->J[i] = Eigen::Vector3f(js["joints"][i][0], js["joints"][i][1], js["joints"][i][2]);
+			joints[i] = Eigen::Vector3f(js["joints"][i][0], js["joints"][i][1], js["joints"][i][2]);
 		}
 		for (uint16_t j = 0; j < js["weights"].size(); j++)
 		{
 			for (uint16_t i = 0; i < js["weights"][j].size(); i++)
 			{
-				result->W(j, i) = js["weights"][j][i];
+				weights(j, i) = js["weights"][j][i];
 			}
 		}
 		for (uint16_t j = 0; j < js["joint_regressor"].size(); j++)
 		{
 			for (uint16_t i = 0; i < js["joint_regressor"][j].size(); i++)
 			{
-				result->joint_regressor(j, i) = js["joint_regressor"][j][i];
+				joint_regressor(j, i) = js["joint_regressor"][j][i];
+			}
+		}
+		for (uint16_t j = 0; j < js["hands_mean"].size(); j++)
+		{
+			hands_mean[j] = js["hands_mean"][j];
+		}
+		for (uint16_t j = 0; j < NUM_MANO_VERTICES; j++)
+		{
+			for (uint16_t i = 0; i < MANO_R_SIZE; i++)
+			{
+				pose_blend_shapes(3 * j, i) = js["pose_blend_shapes"][j][0][i];
+				pose_blend_shapes(3 * j + 1, i) = js["pose_blend_shapes"][j][1][i];
+				pose_blend_shapes(3 * j + 2, i) = js["pose_blend_shapes"][j][2][i];
+			}
+		}
+		for (uint16_t j = 0; j < NUM_MANO_VERTICES; j++)
+		{
+			for (uint16_t i = 0; i < MANO_BETA_SIZE; i++)
+			{
+				shape_blend_shapes(3 * j, i) = js["shape_blend_shapes"][j][0][i];
+				shape_blend_shapes(3 * j + 1, i) = js["shape_blend_shapes"][j][1][i];
+				shape_blend_shapes(3 * j + 2, i) = js["shape_blend_shapes"][j][2][i];
 			}
 		}
 		// std::array<unsigned int, 16> value = js["kinematic_tree"][0];
 		// std::array<unsigned int, 16> key = js["kinematic_tree"][1];
 		for (uint16_t i = 0; i < js["kinematic_tree"][0].size(); i++)
 		{
-			result->kinematic_tree[js["kinematic_tree"][1][i]] = js["kinematic_tree"][0][i];
+			(*kinematic_tree)[js["kinematic_tree"][1][i]] = js["kinematic_tree"][0][i];
 		}
 
+		ManoHand* result = new ManoHand(vertices_template, weights, joints, face_indices, kinematic_tree, joint_regressor, hands_mean, pose_blend_shapes, shape_blend_shapes);
 
 		return result;
+	}
+
+	static inline void print_map(const std::map<unsigned int, unsigned int>& m)
+	{
+		for (const auto& [key, value] : m) {
+			std::cout << key << " = " << value << "; ";
+		}
+		std::cout << "\n";
 	}
 
 	static inline bool readVideoCV(const char* filename, cv::VideoCapture& cap)
@@ -152,7 +191,7 @@ public:
 	static inline bool getNextFrameRaw(cv::VideoCapture& cap, T* frame)
 	{
 		cv::Mat frame;
-		if(getNextFrameCV(cap, frame))
+		if (getNextFrameCV(cap, frame))
 		{
 			frame = (T*)frame.data;
 			return true;

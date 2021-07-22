@@ -155,7 +155,8 @@ if __name__ == '__main__':
 
     # Assign random pose and shape parameters
     m.betas[:] = np.random.rand(m.betas.size) * .03
-    m.pose[:] = np.random.rand(m.pose.size) * 4 - 2
+    #m.pose[:] = np.random.rand(m.pose.size) * 4 - 2
+    m.pose[:] = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     # m.pose[:3] = [0., 0., 0.]
     # m.pose[3:] = [-0.42671473, -0.85829819, -0.50662164, +1.97374622, -0.84298473, -1.29958491]
     # m.pose[:3] = [-1., -1., 1.]
