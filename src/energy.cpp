@@ -7,10 +7,15 @@
 #include <iostream>
 #include <fstream>
 
+#define PRIOR_COEFF_EST 0.5  // Balancing term for surface estimation difference prior
+#define PRIOR_COEFF_SHAPE 0.5 // Balancing term for difference between shape parameters and mean estimation of shape parameters
+#define PRIOR_COEFF_POSE 0.5 // Balancing term for pose prior
+
+
 struct EnergyCostFunction
 {
-	EnergyCostFunction(const float pointX_, const float pointY_, const float weight_, HandModel hands_, const int iteration_, const Hand LorR_)
-		: pointX(pointX_), pointY(pointY_), weight(weight_), hands_to_optimize(hands_), i(iteration_), left_or_right(LorR_)
+    EnergyCostFunction(const float pointX_, const float pointY_, const float weight_, HandModel hands_, const int iteration_, const Hand LorR_, const VectorXf mean_shape_)
+      : pointX(pointX_), pointY(pointY_), weight(weight_), hands_to_optimize(hands_), i(iteration_), left_or_right(LorR_), mean_shape(mean_shape_)
 	{
 
 	}
@@ -26,6 +31,25 @@ struct EnergyCostFunction
 		//simple, weighted L1 norm
 		residual[0] = weight * ((hand_projected[i][0] - pointX) + (hand_projected[i][1] - pointY));
 
+		// Priors
+
+		// Prior 1: Make previous hand projections closer to the previous one.
+
+		if num_sequences > 0:
+  		    residual[0] += PRIOR_COEFF_EST * pow((hand_projected[i][0] - prev_surface_est[i][0]) + (hand_projected[i][1] - prev_surface_est[i][0]), 2).sum();
+
+		// Prior 2: Make shape parameters closer to mean	    
+
+		residual[0] += PRIOR_COEFF_SHAPE * pow(shape - mean_shape, 2).sum();
+
+		// Prior 3: Gaussian pose prior
+
+		residual[0] += PRIOR_COEFF_POSE * pow(pose, 2).sum();
+
+		prev_surface_est = hand_projected; // save current estimations for next iteration
+		mean_shape = (mean_shape * num_sequences + shape) / (num_sequences + 1);  // new mean shape after adding shape params in current iteration
+		num_sequences++;
+
 		return true;
 	}
 
@@ -35,7 +59,10 @@ private:
 	const float weight;
 	HandModel hands_to_optimize;
 	const int i;
-	const Hand left_or_right; 
+	const Hand left_or_right;
+        std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> prev_surface_est;
+        VectorXf mean_shape;
+        int num_sequences;
 };
 
 int main(int argc, char** argv)
@@ -53,6 +80,9 @@ int main(int argc, char** argv)
 
 	std::array<float, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
 	std::array<float, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
+
+	num_sequences = 0;
+	mean_shape = VectorXf::Zero(MANO_BETA_SIZE);
 
 
 	//TODO: SOLVER!
