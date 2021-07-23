@@ -39,8 +39,8 @@ struct ManoHand
 
 	std::array<Eigen::Vector4f, NUM_MANO_VERTICES> vertices; // current position in NDC
 	std::array<Eigen::Vector4f, NUM_MANO_JOINTS> joints; // current joint positions
-	std::array<float, MANO_THETA_SIZE> theta; // pose parameters
-	std::array<float, MANO_BETA_SIZE> beta; // shape parameters
+	std::array<double, MANO_THETA_SIZE> theta; // pose parameters
+	std::array<double, MANO_BETA_SIZE> beta; // shape parameters
 
 	std::array<Eigen::Matrix4f, NUM_MANO_JOINTS> inv_G_zero;
 	std::array<Eigen::Vector<float, 9>, NUM_MANO_JOINTS - 1> R_zero;
@@ -78,10 +78,14 @@ public:
 	HandModel(std::string rightHand_filename, std::string leftHand_filename);
 	~HandModel();
 
-	void setModelParameters(std::array<float, MANO_THETA_SIZE> theta, std::array<float, MANO_BETA_SIZE> beta, Hand hand);
+	void setModelParameters(std::array<double, MANO_THETA_SIZE> theta, std::array<double, MANO_BETA_SIZE> beta, Hand hand);
+	void reset();
 
 	std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand, SimpleCamera camera);
-	void applyTransformation(Eigen::Vector3f t, Hand hand);
+	std::array<std::array<float, 2>, NUM_MANO_VERTICES> get2DVertexLocations(Hand hand, SimpleCamera camera);
+	void applyTranslation(Eigen::Vector3f t, Hand hand);
+	void applyScale(float factor, Hand hand);
+	void applyRotation(float alpha, float beta, float gamma, Hand hand); //for testing purposes only, not meant to be used later as global rotation is included in theta
 
 	bool saveVertices();
 	bool saveMANOJoints();
@@ -105,4 +109,5 @@ private:
 	unsigned int getAncestor(ManoHand* h, unsigned int joint_index);
 	Eigen::Matrix4f computeG(ManoHand* h, unsigned int joint_index);
 	Eigen::Vector<float, 9> computeR(ManoHand* h, unsigned int joint_index);
+	void applyTransformation(Eigen::Matrix4f transform, Hand hand);
 };
