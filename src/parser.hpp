@@ -1,6 +1,7 @@
 #pragma once
 #include "json.hpp"
 #include "mano.h"
+#include <memory>
 
 #define NUM_KEYPOINTS 21
 
@@ -73,7 +74,7 @@ public:
 		std::cout << std::endl;
 	}
 
-	static inline ManoHand* readJsonMANO(std::string filename)
+	static inline std::shared_ptr<ManoHand> readJsonMANO(std::string filename)
 	{
 		std::cout << "Opening " << filename << std::endl;
 
@@ -152,8 +153,8 @@ public:
 		{
 			(*kinematic_tree)[js["kinematic_tree"][1][i]] = js["kinematic_tree"][0][i];
 		}
-
-		ManoHand* result = new ManoHand(vertices_template, weights, joints, face_indices, kinematic_tree, joint_regressor, hands_mean, pose_blend_shapes, shape_blend_shapes);
+		std::shared_ptr<ManoHand> result = std::make_shared<ManoHand>(vertices_template, weights, joints, face_indices, kinematic_tree, joint_regressor, hands_mean, pose_blend_shapes, shape_blend_shapes);
+		//ManoHand* result = new ManoHand(vertices_template, weights, joints, face_indices, kinematic_tree, joint_regressor, hands_mean, pose_blend_shapes, shape_blend_shapes);
 
 		return result;
 	}
