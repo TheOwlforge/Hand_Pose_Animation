@@ -46,6 +46,16 @@ struct EnergyCostFunction
 
 		residual[0] += PRIOR_COEFF_POSE * pow(pose, 2).sum();
 
+		/*
+		  Optional:  Temporal Regularizer: zero-velocity prior (Real-time Pose and Shape Reconstruction of Two Interacting Hands With a Single Depth Camera)
+
+		  residual[0] += pow(shape - prev_shape, 2).sum() + pow(pose - prev_pose, 2).sum()
+
+		  prev_pose = pose;
+		  prev_shape = shape;
+
+		 */
+
 		prev_surface_est = hand_projected; // save current estimations for next iteration
 		mean_shape = (mean_shape * num_sequences + shape) / (num_sequences + 1);  // new mean shape after adding shape params in current iteration
 		num_sequences++;
