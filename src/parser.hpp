@@ -1,7 +1,6 @@
 #pragma once
 #include "json.hpp"
 #include "mano.h"
-#include <memory>
 
 #define NUM_KEYPOINTS 21
 

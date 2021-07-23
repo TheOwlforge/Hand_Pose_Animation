@@ -1,12 +1,13 @@
 #pragma once
 
 #define _USE_MATH_DEFINES
-#include <cmath>
 
+#include <cmath>
 #include <iostream>
 #include <chrono>
 #include <ppl.h>
 #include <random>
+#include <memory>
 
 #include <opencv2/opencv.hpp>
 
