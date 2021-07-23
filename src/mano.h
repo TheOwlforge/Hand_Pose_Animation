@@ -91,6 +91,8 @@ public:
 	bool saveMANOJoints();
 	bool saveOPJoints();
 
+	void display(const char* filename, Hand hand);
+
 	template <int T>
 	static void fillRandom(std::array<float, T>* test, float bounds)
 	{
