@@ -177,7 +177,7 @@ void HandModel::setModelParameters(std::array<double, MANO_THETA_SIZE> theta, st
 
 Eigen::Vector2f computeProjection(Eigen::Vector4f point, SimpleCamera camera)
 {
-	Eigen::Vector3f result = camera.getK() * Eigen::Vector3f(point.x() / point.z(), point.y() / point.z(), point.z());
+	Eigen::Vector3f result = camera.getK() * Eigen::Vector3f(point.x() / point.z(), point.y() / point.z(), point.z() / point.z());
 	//return Eigen::Vector2f(((point.x() * camera.f_x) / (point.z() / camera.aspect)) + camera.m_x,
 	//					   ((point.y() * camera.f_y) / point.z()) + camera.m_y);
 	return Eigen::Vector2f(result.x(), result.y());
@@ -282,7 +282,7 @@ void HandModel::applyRotation(float alpha, float beta, float gamma, Hand hand)
 	std::cout << "Applying Rotation" << std::endl;
 
 	Eigen::Matrix3f rot;
-	rot = Eigen::AngleAxisf(alpha, Eigen::Vector3f::UnitX())* Eigen::AngleAxisf(beta, Eigen::Vector3f::UnitX())* Eigen::AngleAxisf(gamma, Eigen::Vector3f::UnitX());
+	rot = Eigen::AngleAxisf(alpha, Eigen::Vector3f::UnitX())* Eigen::AngleAxisf(beta, Eigen::Vector3f::UnitY())* Eigen::AngleAxisf(gamma, Eigen::Vector3f::UnitZ());
 	Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
 	transform.block<3, 3>(0, 0) = rot;
 
@@ -582,4 +582,45 @@ Eigen::Matrix3f HandModel::rodrigues(Eigen::Vector3f w)
 
 	Eigen::Matrix3f result = Eigen::Matrix3f::Identity() + skew * sin(w_length) + (skew * skew) * (1 - cos(w_length));
 	return result;
+}
+
+void HandModel::display(const char* filename, Hand hand)
+{
+	SimpleCamera c = SimpleCamera();
+	std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> j = get2DJointLocations(Hand::RIGHT, c);
+	std::array<std::array<float, 2>, NUM_MANO_VERTICES> v = get2DVertexLocations(Hand::RIGHT, c);
+
+	cv::Mat frame = Parser::readImageCV(filename);
+
+	for (int i = 0; i < NUM_MANO_VERTICES; i++)
+	{
+		//cv::Point pos(int((v[i][0] / 2 + 0.5f) * frame.cols), int((v[i][1] / 2 + 0.5f) * frame.rows));
+		cv::Point pos((int)v[i][0] / c.image_width * frame.cols, (int)v[i][1] / c.image_height * frame.rows);
+		cv::circle(frame, pos, 1, cv::Scalar(0, 255, 0), -1, cv::FILLED);
+	}
+
+	for (int i = 0; i < NUM_OPENPOSE_KEYPOINTS; i++)
+	{
+		//cv::Point pos(int((k[i][0] / 2 + 0.5f) * frame.cols), int((k[i][1] / 2 + 0.5f) * frame.rows));
+		cv::Point pos((int)j[i][0] / c.image_width * frame.cols, (int)j[i][1] / c.image_height * frame.rows);
+		cv::circle(frame, pos, 1, cv::Scalar(0, 0, 255), -1, cv::FILLED);
+		cv::putText(frame, std::to_string(i), pos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0));
+		//std::cout << pos << std::endl;
+	}
+
+	//print a gitter for testing
+	/*for (int j = 0; j < 5; j++)
+	{
+		for (int i = 0; i < 5; i++)
+		{
+			Eigen::Vector3f result = c.getK() * Eigen::Vector3f(i/10.0, j/10.0, 1);
+			cv::Point pos(result.x() / c.image_width * frame.cols, result.y() / c.image_height * frame.rows);
+			std::cout << pos << std::endl;
+			cv::circle(frame, pos, 1, cv::Scalar(255, 0, 0), -1, cv::FILLED);
+			cv::putText(frame, std::to_string(i) + ", " + std::to_string(j), pos, cv::FONT_HERSHEY_SIMPLEX, 0.25, cv::Scalar(255, 0, 0));
+		}
+	}*/
+
+	cv::imshow("Hand", frame);
+	cv::waitKey(0);
 }
