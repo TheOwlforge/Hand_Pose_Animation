@@ -4,6 +4,7 @@
 *.user
 bin/
 bin-int/
+deps/OpenCV
 deps/ceres
 deps/glog-installed
 deps/glog
