@@ -1,0 +1,11 @@
+rnd1.fill(0.0);
+
+
+
+<!DOCTYPE ViewState>
+<project>
+ <VCGCamera CenterPx="765 449" ViewportPx="1531 898" PixelSizeMm="0.0369161 0.0369161" TranslationVector="0.0628981 -0.787183 -0.106655 1" CameraType="0" FocalMm="28.709295" BinaryData="0" RotationMatrix="-0.0117026 -0.0068253 -0.999908 0 -0.996828 -0.0786456 0.0122034 0 -0.0787217 0.996879 -0.00588328 0 0 0 0 1 " LensDistortion="0 0"/>
+ <ViewSettings NearPlane="0.3031089" TrackScale="3.8576655" FarPlane="4.7810888"/>
+</project>
+
+

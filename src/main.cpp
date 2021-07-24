@@ -33,6 +33,8 @@ int main(int argc, char* argv[])
 		rnd1[i + 3] = hands->rightHand->hands_mean[i];
 	}*/
 
+	//rnd1.fill(0.2);
+
 	hands->setModelParameters(rnd1, rnd2, Hand::RIGHT);
 	hands->applyTransformation(Eigen::Vector3f(0, 0, 0.2), Hand::LEFT);
 	hands->saveVertices();

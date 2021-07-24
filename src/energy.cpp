@@ -20,11 +20,14 @@ struct EnergyCostFunction
 	{
 		//create MANO surface thorugh setting shape and pose parameters for predefined Hand Model 
 		hands_to_optimize.setModelParameters(shape, pose, left_or_right);
+
 		//transform MANO to OpenPose and Project to 2D given 
-		std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = hands.get2DJointsLocations(left_or_right);
+		std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = hands_to_optimize.get2DJointsLocations(left_or_right);
 
 		//simple, weighted L1 norm
 		residual[0] = weight * ((hand_projected[i][0] - pointX) + (hand_projected[i][1] - pointY));
+
+		//RESET! hand position 
 
 		return true;
 	}
@@ -53,18 +56,18 @@ int main(int argc, char** argv)
 
 	std::array<float, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
 	std::array<float, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
-
-
-	//TODO: SOLVER!
-
-	/*
+	
 	// Define initial values for parameters of pose and shape 
 	const VectorXf poseInitial = VectorXf::Random(MANO_THETA_SIZE);
 	const VectorXf shapeInitial = VectorXf::Random(MANO_BETA_SIZE);
 
 	// Assign initial values to parameters
-	VectorXf pose = poseInitial;
-	VectorXf shape = shapeInitial;
+	//VectorXf pose = poseInitial;
+	//VectorXf shape = shapeInitial;
+	std::array<double, MANO_THETA_SIZE> pose;
+	std::array<double, MANO_BETA_SIZE> shape;
+	//double shape;
+	//double pose;
 
 	//create initial HandModel for further optimization
 	HandModel hands_to_optimize("mano/model/mano_right.json", "mano/model/mano_left.json");
@@ -72,23 +75,20 @@ int main(int argc, char** argv)
 	// FOR TESTING: we use only the right hand 
 	Hand left_or_right = Hand::RIGHT;
 
-
-
 	ceres::Problem problem;
 
 	// Residual block for right hand 
 	for (int i = 0; i < NUM_KEYPOINTS; ++i)
 	{
-		//CostFunction* cost_function =
-		//	new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
-		//		new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right));
-		//problem.AddResidualBlock(cost_function, nullptr, &shape, &pose);
-
-
-		problem.AddResidualBlock(
+		ceres::CostFunction* cost_function =
 			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
-				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right)),
-			nullptr, &shape, &pose);//VECTORX IST EIN PROBLEM!!!!
+				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right));
+		problem.AddResidualBlock(cost_function, nullptr, &shape[0], &pose[0]);
+
+		//problem.AddResidualBlock(
+		//	new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
+		//		new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right)),
+		//	nullptr, &shape[0], &pose[0]);
 	}
 
 	ceres::Solver::Options options;
@@ -104,11 +104,10 @@ int main(int argc, char** argv)
 	// Output the final pose and shape
 
 	std::cout << "Initial pose: " << poseInitial << "shape: " << shapeInitial << std::endl;
-	std::cout << "Final pose: " << pose << "shape: " << shape << std::endl;
+	//std::cout << "Final pose: " << pose << "shape: " << shape << std::endl;
 
 	system("pause");
 
-	*/
 
 
 	//Run solver and output - trivial
