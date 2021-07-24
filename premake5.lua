@@ -20,6 +20,7 @@ project "HandPose"
     CV_INC = iif(os.istarget("windows"), "include", "include/opencv4")
     OPENPOSE_DIR = "deps/OpenPose/"
     EIGEN_DIR = "deps/Eigen/"
+    CERES_DIR = "deps/Ceres/"
 
     filter "system:linux"
         libdirs
@@ -46,12 +47,14 @@ project "HandPose"
         "src",
         OPENCV_DIR .. CV_INC,
         OPENPOSE_DIR .. "include",
-        EIGEN_DIR
+        EIGEN_DIR,
+	CERES_DIR .. "include"
     }
    
     libdirs
     {
-        OPENCV_DIR .. CV_LIB
+        OPENCV_DIR .. CV_LIB,
+	CERES_DIR .. "lib"
     }
 
     files { "src/**.h", "src/**.hpp", "src/**.cpp"}
@@ -87,7 +90,8 @@ project "HandPose"
             "opencv_world" .. OPENCV_VERSION .. "d",
             "aded", "IlmImfd", "ippicvmt", "ippiwd", "ittnotifyd", "libjpeg-turbod", "libopenjp2d", "libpngd", "libprotobufd", "libtiffd", "libwebpd", "quircd", "zlibd",
             "openposed", "caffe-d", "caffeproto-d", "snappyd", "lmdbd", "glogd", "gflagsd", "caffezlibd", "caffehdf5_D", "caffehdf5_hl_D",
-            "boost_date_time-vc142-mt-gd-x64-1_74", "boost_filesystem-vc142-mt-gd-x64-1_74", "boost_system-vc142-mt-gd-x64-1_74", "boost_thread-vc142-mt-gd-x64-1_74"
+            "boost_date_time-vc142-mt-gd-x64-1_74", "boost_filesystem-vc142-mt-gd-x64-1_74", "boost_system-vc142-mt-gd-x64-1_74", "boost_thread-vc142-mt-gd-x64-1_74",
+	    "ceres-debug"
         }
         postbuildcommands
         {
@@ -101,7 +105,8 @@ project "HandPose"
             "opencv_world" .. OPENCV_VERSION,
             "ade", "IlmImf", "ippicvmt", "ippiw", "ittnotify", "libjpeg-turbo", "libopenjp2", "libpng", "libprotobuf", "libtiff", "libwebp", "quirc", "zlib",
             "openpose", "caffe", "caffeproto", "snappy", "lmdb", "glog", "gflags", "caffezlib", "caffehdf5", "caffehdf5_hl",
-            "boost_date_time-vc142-mt-x64-1_74", "boost_filesystem-vc142-mt-x64-1_74", "boost_system-vc142-mt-x64-1_74", "boost_thread-vc142-mt-x64-1_74"
+            "boost_date_time-vc142-mt-x64-1_74", "boost_filesystem-vc142-mt-x64-1_74", "boost_system-vc142-mt-x64-1_74", "boost_thread-vc142-mt-x64-1_74",
+	    "ceres"
         }
         postbuildcommands
         {

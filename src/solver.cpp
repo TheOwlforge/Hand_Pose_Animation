@@ -1,4 +1,6 @@
-#include "parser.hpp"
+#pragma once
+#include "pch.h"
+/*#include "parser.hpp"
 #include "Eigen.h"
 #include "ceres/ceres.h"
 #include <iostream>
@@ -22,13 +24,13 @@ struct EnergyFunction
 	template<typename T>
 	bool operator()(const T* const pose, const T* const shape, T* globalRot) const
 	{
-	  /*
+	  
 	    TODO: Implement energy function
 
 	    1. Get surface from MANO model given pose, shape
 	    2. Sample joints from MANO surface corresponding to OpenPose
             3. Project joints with camera intrinsincs
-	  */
+	  
 
   	  T energyFunction = 0.0;
 
@@ -105,3 +107,4 @@ int main(int argc, char **argv) {
   system("pause");
   return 0;
 }
+*/
