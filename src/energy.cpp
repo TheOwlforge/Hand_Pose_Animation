@@ -6,6 +6,7 @@
 #include "ceres/ceres.h"
 #include <iostream>
 #include <fstream>
+#include "camera.h"
 
 struct EnergyCostFunction
 {
@@ -18,16 +19,34 @@ struct EnergyCostFunction
 	template<typename T>
 	bool operator()(const T* const shape, const T* const pose, T* residual) const
 	{
+		SimpleCamera meshlabcam;
+		meshlabcam.f_x = (28.709295 * 1531) / 0.0369161;
+		meshlabcam.f_y = (28.709295 * 898) / 0.0369161;
+		meshlabcam.m_x = 765;
+		meshlabcam.m_y = 449;
+
+		HandModel testHand("mano/model/mano_right.json", "mano/model/mano_left.json");
+
+		Hand LorR = Hand::RIGHT;
+
+		testHand.setModelParameters(shape, pose, LorR);
+
+		std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = testHand.get2DJointLocations(left_or_right, meshlabcam);
+
+		residual[0] = weight * ((hand_projected[i][0] - pointX) + (hand_projected[i][1] - pointY));
+
+		/*
 		//create MANO surface thorugh setting shape and pose parameters for predefined Hand Model 
 		hands_to_optimize.setModelParameters(shape, pose, left_or_right);
 
 		//transform MANO to OpenPose and Project to 2D given 
-		std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = hands_to_optimize.get2DJointsLocations(left_or_right);
+		std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = hands_to_optimize.get2DJointsLocations(left_or_right, meshlabcam);
 
 		//simple, weighted L1 norm
 		residual[0] = weight * ((hand_projected[i][0] - pointX) + (hand_projected[i][1] - pointY));
 
-		//RESET! hand position 
+		//RESET! hand position
+		*/
 
 		return true;
 	}
