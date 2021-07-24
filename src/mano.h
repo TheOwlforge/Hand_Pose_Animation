@@ -78,10 +78,11 @@ public:
 	HandModel(std::string rightHand_filename, std::string leftHand_filename);
 	~HandModel();
 
-	void setModelParameters(std::array<double, MANO_THETA_SIZE> theta, std::array<double, MANO_BETA_SIZE> beta, Hand hand);
+	template<typename T>
+	void setModelParameters(const T* const theta, const T* const beta, Hand hand);
 	void reset();
 
-	std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand, SimpleCamera camera);
+	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand, SimpleCamera camera);
 	std::array<std::array<float, 2>, NUM_MANO_VERTICES> get2DVertexLocations(Hand hand, SimpleCamera camera);
 	void applyTranslation(Eigen::Vector3f t, Hand hand);
 	void applyScale(float factor, Hand hand);
