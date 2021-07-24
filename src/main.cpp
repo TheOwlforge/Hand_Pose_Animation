@@ -34,6 +34,8 @@ int main(int argc, char* argv[])
 		rnd1[i + 3] = hands->rightHand->hands_mean[i];
 	}*/
 
+	//rnd1.fill(0.2);
+
 	hands->setModelParameters(rnd1, rnd2, Hand::RIGHT);
 	//hands->reset();
 	//hands->setModelParameters(rnd1, rnd2, Hand::RIGHT);

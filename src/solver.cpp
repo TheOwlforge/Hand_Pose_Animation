@@ -3,6 +3,7 @@
 #include "ceres/ceres.h"
 #include <iostream>
 #include <fstream>
+#include "pch.h"
 
 #define POSEDIM      12;
 #define SHAPEDIM     10;

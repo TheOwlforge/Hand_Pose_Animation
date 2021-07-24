@@ -112,4 +112,5 @@ private:
 	Eigen::Matrix4f computeG(std::shared_ptr<ManoHand> h, unsigned int joint_index);
 	Eigen::Vector<float, 9> computeR(std::shared_ptr<ManoHand> h, unsigned int joint_index);
 	void applyTransformation(Eigen::Matrix4f transform, Hand hand);
+	void applyTransformation(Eigen::Matrix4f transform, Hand hand);
 };
