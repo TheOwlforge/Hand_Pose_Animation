@@ -38,25 +38,25 @@ public:
 	Input: Filename (.json)
 	Output: Left and Right Keypoints (#keypoints = 20) (Format: x, y, c)
 	*/
-	static inline std::array<std::array<float, NUM_KEYPOINTS * 3>, 2> readJsonCV(std::string filename)
+	static inline std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> readJsonCV(std::string filename)
 	{
 		// Read and parse json file
 		std::ifstream keypoints_file(filename);
 		json js = json::parse(keypoints_file);
 
 		// Assign keypoints to float array
-		std::array<float, NUM_KEYPOINTS * 3> left_keypoints = js["people"][0]["hand_left_keypoints_2d"];
-		std::array<float, NUM_KEYPOINTS * 3> right_keypoints = js["people"][0]["hand_right_keypoints_2d"];
+		std::array<double, NUM_KEYPOINTS * 3> left_keypoints = js["people"][0]["hand_left_keypoints_2d"];
+		std::array<double, NUM_KEYPOINTS * 3> right_keypoints = js["people"][0]["hand_right_keypoints_2d"];
 
-		std::array<std::array<float, NUM_KEYPOINTS * 3>, 2> keypoints = { left_keypoints, right_keypoints };
+		std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> keypoints = { left_keypoints, right_keypoints };
 
 		return keypoints;
 	}
 
-	static inline void printKeypoints(std::array<std::array<float, NUM_KEYPOINTS * 3>, 2> keypoints)
+	static inline void printKeypoints(std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> keypoints)
 	{
-		std::array<float, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
-		std::array<float, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
+		std::array<double, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
+		std::array<double, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
 
 		// Print each of left/right keypoints: x0, y0, c0, x1, y1, c1, x2, y2, c2, ..., x20, y20, c20
 
@@ -245,7 +245,7 @@ public:
 	static void testJson() {
 		std::string filename = "samples/webcam_examples/000000000000_keypoints.json";
 
-		std::array<std::array<float, NUM_KEYPOINTS * 3>, 2> keypoints = readJsonCV(filename);
+		std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> keypoints = readJsonCV(filename);
 
 		printKeypoints(keypoints);
 	}

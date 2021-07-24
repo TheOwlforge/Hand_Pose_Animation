@@ -10,7 +10,7 @@
 
 struct EnergyCostFunction
 {
-	EnergyCostFunction(const float pointX_, const float pointY_, const float weight_, HandModel hands_, const int iteration_, const Hand LorR_)
+	EnergyCostFunction(double pointX_, double pointY_, double weight_, HandModel hands_, const int iteration_, Hand LorR_)
 		: pointX(pointX_), pointY(pointY_), weight(weight_), hands_to_optimize(hands_), i(iteration_), left_or_right(LorR_)
 	{
 
@@ -19,45 +19,38 @@ struct EnergyCostFunction
 	template<typename T>
 	bool operator()(const T* const shape, const T* const pose, T* residual) const
 	{
+		//camera settings for meshlab
 		SimpleCamera meshlabcam;
 		meshlabcam.f_x = (28.709295 * 1531) / 0.0369161;
 		meshlabcam.f_y = (28.709295 * 898) / 0.0369161;
 		meshlabcam.m_x = 765;
 		meshlabcam.m_y = 449;
 
+		//TODO: Bring the initialization outside
 		HandModel testHand("mano/model/mano_right.json", "mano/model/mano_left.json");
 
-		Hand LorR = Hand::RIGHT;
-
-		testHand.setModelParameters(shape, pose, LorR);
-
-		std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = testHand.get2DJointLocations(left_or_right, meshlabcam);
-
-		residual[0] = weight * ((hand_projected[i][0] - pointX) + (hand_projected[i][1] - pointY));
-
-		/*
 		//create MANO surface thorugh setting shape and pose parameters for predefined Hand Model 
-		hands_to_optimize.setModelParameters(shape, pose, left_or_right);
+		testHand.setModelParameters(shape, pose, left_or_right);
 
-		//transform MANO to OpenPose and Project to 2D given 
-		std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = hands_to_optimize.get2DJointsLocations(left_or_right, meshlabcam);
+		//transform MANO to OpenPose and Project to 2D given camera intrinsics
+		std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = testHand.get2DJointLocations(left_or_right, meshlabcam);
 
 		//simple, weighted L1 norm
-		residual[0] = weight * ((hand_projected[i][0] - pointX) + (hand_projected[i][1] - pointY));
+		residual[0] = T(weight) * (hand_projected[i][0] - T(pointX) + (hand_projected[i][1] - T(pointY)));
 
-		//RESET! hand position
-		*/
+		//reset hand shape
+		testHand.reset();
 
 		return true;
 	}
 
 private:
-	const float pointX;
-	const float pointY;
-	const float weight;
+	double pointX;
+	double pointY;
+	double weight;
 	HandModel hands_to_optimize;
 	const int i;
-	const Hand left_or_right; 
+	Hand left_or_right; 
 };
 
 int main(int argc, char** argv)
@@ -71,10 +64,13 @@ int main(int argc, char** argv)
 		filename = "samples/webcam_examples/000000000000_keypoints.json";
 	}
 
-	std::array<std::array<float, NUM_KEYPOINTS * 3>, 2> keypoints = Parser::readJsonCV(filename);
+	std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> keypoints = Parser::readJsonCV(filename);
 
-	std::array<float, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
-	std::array<float, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
+	std::array<double, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
+	std::array<double, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
+
+	//std::array<double, NUM_KEYPOINTS * 3> left_keypoints;
+	//std::array<double, NUM_KEYPOINTS * 3> right_keypoints;
 	
 	// Define initial values for parameters of pose and shape 
 	const VectorXf poseInitial = VectorXf::Random(MANO_THETA_SIZE);

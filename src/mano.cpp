@@ -63,7 +63,8 @@ void HandModel::reset()
 		}
 	});*/
 
-void HandModel::setModelParameters(std::array<double, MANO_THETA_SIZE> theta, std::array<double, MANO_BETA_SIZE> beta, Hand hand)
+template<typename T>
+void HandModel::setModelParameters(const T*const theta, const T*const beta, Hand hand)
 {
 	std::cout << "Applying Model Parameters" << std::endl;
 
@@ -183,7 +184,7 @@ Eigen::Vector2f computeProjection(Eigen::Vector4f point, SimpleCamera camera)
 	return Eigen::Vector2f(result.x(), result.y());
 }
 
-std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand, SimpleCamera camera)
+std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand, SimpleCamera camera)
 {
 	ManoHand* h;
 	switch (hand)
