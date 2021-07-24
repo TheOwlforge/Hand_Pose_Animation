@@ -63,7 +63,7 @@ void HandModel::reset()
 		}
 	});*/
 
-void HandModel::setModelParameters(std::array<double, MANO_THETA_SIZE> theta, std::array<double, MANO_BETA_SIZE> beta, Hand hand)
+void HandModel::setModelParameters(const double* const theta, const double* const beta, Hand hand)
 {
 	std::cout << "Applying Model Parameters" << std::endl;
 
@@ -80,8 +80,8 @@ void HandModel::setModelParameters(std::array<double, MANO_THETA_SIZE> theta, st
 		return;
 	}
 
-	h->theta = theta;
-	h->beta = beta;
+	std::copy_n(theta, MANO_THETA_SIZE, h->theta.begin());
+	std::copy_n(beta, MANO_BETA_SIZE, h->beta.begin());
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -183,7 +183,7 @@ Eigen::Vector2f computeProjection(Eigen::Vector4f point, SimpleCamera camera)
 	return Eigen::Vector2f(result.x(), result.y());
 }
 
-std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand, SimpleCamera camera)
+std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand, SimpleCamera camera)
 {
 	std::shared_ptr<ManoHand> h;
 	switch (hand)
@@ -196,7 +196,7 @@ std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLo
 		break;
 	}
 
-	std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> result{};
+	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> result{};
 	std::array<int, NUM_MANO_JOINTS> opIndex = { 0, 5, 6, 7, 9, 10, 11, 17, 18, 19, 13, 14, 15, 1, 2, 3 };
 	for (int j = 0; j < NUM_MANO_JOINTS; j++)
 	{
@@ -213,7 +213,7 @@ std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLo
 	return result;
 }
 
-std::array<std::array<float, 2>, NUM_MANO_VERTICES> HandModel::get2DVertexLocations(Hand hand, SimpleCamera camera)
+std::array<std::array<double, 2>, NUM_MANO_VERTICES> HandModel::get2DVertexLocations(Hand hand, SimpleCamera camera)
 {
 	std::shared_ptr<ManoHand> h;
 	switch (hand)
@@ -226,7 +226,7 @@ std::array<std::array<float, 2>, NUM_MANO_VERTICES> HandModel::get2DVertexLocati
 		break;
 	}
 
-	std::array<std::array<float, 2>, NUM_MANO_VERTICES> result{};
+	std::array<std::array<double, 2>, NUM_MANO_VERTICES> result{};
 	for (int j = 0; j < NUM_MANO_VERTICES; j++)
 	{
 		Eigen::Vector2f proj = computeProjection(h->vertices[j], camera);
@@ -587,8 +587,8 @@ Eigen::Matrix3f HandModel::rodrigues(Eigen::Vector3f w)
 void HandModel::display(const char* filename, Hand hand)
 {
 	SimpleCamera c = SimpleCamera();
-	std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> j = get2DJointLocations(Hand::RIGHT, c);
-	std::array<std::array<float, 2>, NUM_MANO_VERTICES> v = get2DVertexLocations(Hand::RIGHT, c);
+	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> j = get2DJointLocations(Hand::RIGHT, c);
+	std::array<std::array<double, 2>, NUM_MANO_VERTICES> v = get2DVertexLocations(Hand::RIGHT, c);
 
 	cv::Mat frame = Parser::readImageCV(filename);
 

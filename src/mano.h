@@ -78,11 +78,11 @@ public:
 	HandModel(std::string rightHand_filename, std::string leftHand_filename);
 	~HandModel();
 
-	void setModelParameters(std::array<double, MANO_THETA_SIZE> theta, std::array<double, MANO_BETA_SIZE> beta, Hand hand);
+	void setModelParameters(const double* const theta, const double* const beta, Hand hand);
 	void reset();
 
-	std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand, SimpleCamera camera);
-	std::array<std::array<float, 2>, NUM_MANO_VERTICES> get2DVertexLocations(Hand hand, SimpleCamera camera);
+	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand, SimpleCamera camera);
+	std::array<std::array<double, 2>, NUM_MANO_VERTICES> get2DVertexLocations(Hand hand, SimpleCamera camera);
 	void applyTranslation(Eigen::Vector3f t, Hand hand);
 	void applyScale(float factor, Hand hand);
 	void applyRotation(float alpha, float beta, float gamma, Hand hand); //for testing purposes only, not meant to be used later as global rotation is included in theta

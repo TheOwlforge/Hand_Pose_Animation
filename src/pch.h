@@ -8,6 +8,7 @@
 #include <ppl.h>
 #include <random>
 #include <memory>
+#include <array>
 
 #include <opencv2/opencv.hpp>
 
