@@ -1,7 +1,7 @@
 workspace "HandPose"
     architecture "x64"
     staticruntime "on"
-    flags { "MultiProcessorCompile" }
+    staticruntime "Off"
     configurations { "Debug", "Release" }
 
 project "HandPose"
@@ -16,11 +16,12 @@ project "HandPose"
 
     OPENCV_DIR = "deps/OpenCV/install/"
     OPENCV_VERSION = "453"
-    CV_LIB = iif(os.istarget("windows"), "x64/vc16/staticlib", "lib")
+    CV_LIB = iif(os.istarget("windows"), "x64/vc16/lib", "lib")
     CV_INC = iif(os.istarget("windows"), "include", "include/opencv4")
     OPENPOSE_DIR = "deps/OpenPose/"
     EIGEN_DIR = "deps/Eigen/"
     CERES_DIR = "deps/Ceres/"
+    GLOG_DIR = "deps/glog/"
 
     filter "system:linux"
         libdirs
@@ -48,13 +49,15 @@ project "HandPose"
         OPENCV_DIR .. CV_INC,
         OPENPOSE_DIR .. "include",
         EIGEN_DIR,
-	CERES_DIR .. "include"
+	CERES_DIR .. "include",
+	GLOG_DIR .. "include"
     }
    
     libdirs
     {
         OPENCV_DIR .. CV_LIB,
-	CERES_DIR .. "lib"
+	CERES_DIR .. "lib",
+	GLOG_DIR .. "lib"
     }
 
     files { "src/**.h", "src/**.hpp", "src/**.cpp"}
@@ -88,29 +91,33 @@ project "HandPose"
         links
         { 
             "opencv_world" .. OPENCV_VERSION .. "d",
-            "aded", "IlmImfd", "ippicvmt", "ippiwd", "ittnotifyd", "libjpeg-turbod", "libopenjp2d", "libpngd", "libprotobufd", "libtiffd", "libwebpd", "quircd", "zlibd",
+            --- "aded", "IlmImfd", "ippicvmt", "ippiwd", "ittnotifyd", "libjpeg-turbod", "libopenjp2d", "libpngd", "libprotobufd", "libtiffd", "libwebpd", "quircd", "zlibd",
             "openposed", "caffe-d", "caffeproto-d", "snappyd", "lmdbd", "glogd", "gflagsd", "caffezlibd", "caffehdf5_D", "caffehdf5_hl_D",
             "boost_date_time-vc142-mt-gd-x64-1_74", "boost_filesystem-vc142-mt-gd-x64-1_74", "boost_system-vc142-mt-gd-x64-1_74", "boost_thread-vc142-mt-gd-x64-1_74",
-	    "ceres-debug"
+	    "ceres-debug", "glogd"
         }
         postbuildcommands
         {
+	    ("{COPY} " .. OPENCV_DIR .. "build/bin/Debug/opencv_world" .. OPENCV_VERSION .. "d.dll bin/" .. outdir),
             ("{COPY} " .. OPENPOSE_DIR .. "build/x64/Debug/openposed.dll bin/" .. outdir),
             ("{COPY} deps/misc/ bin/" .. outdir),
+	    ("{COPY} " .. GLOG_DIR .. "bin/glogd.dll bin/" .. outdir)
         }
 
     filter {"system:windows", "configurations:Release"}
         links 
         { 
             "opencv_world" .. OPENCV_VERSION,
-            "ade", "IlmImf", "ippicvmt", "ippiw", "ittnotify", "libjpeg-turbo", "libopenjp2", "libpng", "libprotobuf", "libtiff", "libwebp", "quirc", "zlib",
+            --- "ade", "IlmImf", "ippicvmt", "ippiw", "ittnotify", "libjpeg-turbo", "libopenjp2", "libpng", "libprotobuf", "libtiff", "libwebp", "quirc", "zlib",
             "openpose", "caffe", "caffeproto", "snappy", "lmdb", "glog", "gflags", "caffezlib", "caffehdf5", "caffehdf5_hl",
             "boost_date_time-vc142-mt-x64-1_74", "boost_filesystem-vc142-mt-x64-1_74", "boost_system-vc142-mt-x64-1_74", "boost_thread-vc142-mt-x64-1_74",
-	    "ceres"
+	    "ceres", "glog"
         }
         postbuildcommands
         {
+	    ("{COPY} " .. OPENCV_DIR .. "build/bin/Release/opencv_world" .. OPENCV_VERSION .. ".dll bin/" .. outdir),
             ("{COPY} " .. OPENPOSE_DIR .. "build/x64/Release/openpose.dll bin/" .. outdir),
+	    ("{COPY} " .. GLOG_DIR .. "bin/glog.dll bin/" .. outdir)
         }
  
     filter {"system:linux"}

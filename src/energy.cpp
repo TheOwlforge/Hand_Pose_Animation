@@ -30,7 +30,7 @@ struct EnergyCostFunction
 		HandModel testHand("mano/model/mano_right.json", "mano/model/mano_left.json");
 
 		//create MANO surface thorugh setting shape and pose parameters for predefined Hand Model 
-		testHand.setModelParameters(shape, pose, left_or_right);
+		testHand.setModelParameters((double*)shape, (double*)pose, left_or_right);
 
 		//transform MANO to OpenPose and Project to 2D given camera intrinsics
 		std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = testHand.get2DJointLocations(left_or_right, meshlabcam);
@@ -53,7 +53,7 @@ private:
 	Hand left_or_right; 
 };
 
-int main(int argc, char** argv)
+int run(int argc, char** argv)
 {
 	// Read OpenPose keypoints
 	std::string filename;

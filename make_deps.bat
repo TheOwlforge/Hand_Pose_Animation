@@ -1,7 +1,7 @@
 if exist .\deps\OpenCV\build\ (
     echo Skipping OpenCV build - folder already exists.
 ) else (
-    cmake -G "Visual Studio 16 2019" -S .\deps\OpenCV -B .\deps\OpenCV\build -D BUILD_SHARED_LIBS=OFF -D BUILD_opencv_world=ON
+    cmake -G "Visual Studio 16 2019" -S .\deps\OpenCV -B .\deps\OpenCV\build -D BUILD_SHARED_LIBS=ON -D BUILD_opencv_world=ON
     cmake --build .\deps\OpenCV\build --config "Debug"
     cmake --build .\deps\OpenCV\build --config "Release"
 )
