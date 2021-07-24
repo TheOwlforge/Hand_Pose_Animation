@@ -56,7 +56,11 @@ int main(int argc, char** argv)
 
 	std::array<float, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
 	std::array<float, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
-	
+
+
+	//TODO: SOLVER!
+
+	/*
 	// Define initial values for parameters of pose and shape 
 	const VectorXf poseInitial = VectorXf::Random(MANO_THETA_SIZE);
 	const VectorXf shapeInitial = VectorXf::Random(MANO_BETA_SIZE);
@@ -75,20 +79,23 @@ int main(int argc, char** argv)
 	// FOR TESTING: we use only the right hand 
 	Hand left_or_right = Hand::RIGHT;
 
+
+
 	ceres::Problem problem;
 
 	// Residual block for right hand 
 	for (int i = 0; i < NUM_KEYPOINTS; ++i)
 	{
-		ceres::CostFunction* cost_function =
-			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
-				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right));
-		problem.AddResidualBlock(cost_function, nullptr, &shape[0], &pose[0]);
-
-		//problem.AddResidualBlock(
+		//CostFunction* cost_function =
 		//	new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
-		//		new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right)),
-		//	nullptr, &shape[0], &pose[0]);
+		//		new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right));
+		//problem.AddResidualBlock(cost_function, nullptr, &shape, &pose);
+
+
+		problem.AddResidualBlock(
+			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
+				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right)),
+			nullptr, &shape, &pose);//VECTORX IST EIN PROBLEM!!!!
 	}
 
 	ceres::Solver::Options options;
@@ -107,6 +114,8 @@ int main(int argc, char** argv)
 	//std::cout << "Final pose: " << pose << "shape: " << shape << std::endl;
 
 	system("pause");
+
+	*/
 
 
 
