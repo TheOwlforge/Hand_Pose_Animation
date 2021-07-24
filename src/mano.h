@@ -69,8 +69,8 @@ struct ManoHand
 class HandModel
 {
 public:
-	ManoHand* rightHand;
-	ManoHand* leftHand;
+	std::shared_ptr<ManoHand> rightHand;
+	std::shared_ptr<ManoHand> leftHand;
 
 	bool isVisible_left;
 	bool isVisible_right;
@@ -107,9 +107,9 @@ public:
 
 private:
 	Eigen::Matrix3f rodrigues(Eigen::Vector3f w);
-	bool hasAncestor(ManoHand* h, unsigned int joint_index);
-	unsigned int getAncestor(ManoHand* h, unsigned int joint_index);
-	Eigen::Matrix4f computeG(ManoHand* h, unsigned int joint_index);
-	Eigen::Vector<float, 9> computeR(ManoHand* h, unsigned int joint_index);
+	bool hasAncestor(std::shared_ptr<ManoHand> h, unsigned int joint_index);
+	unsigned int getAncestor(std::shared_ptr<ManoHand> h, unsigned int joint_index);
+	Eigen::Matrix4f computeG(std::shared_ptr<ManoHand> h, unsigned int joint_index);
+	Eigen::Vector<float, 9> computeR(std::shared_ptr<ManoHand> h, unsigned int joint_index);
 	void applyTransformation(Eigen::Matrix4f transform, Hand hand);
 };

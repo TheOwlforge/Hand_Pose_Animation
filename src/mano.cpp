@@ -67,7 +67,7 @@ void HandModel::setModelParameters(std::array<double, MANO_THETA_SIZE> theta, st
 {
 	std::cout << "Applying Model Parameters" << std::endl;
 
-	ManoHand* h;
+	std::shared_ptr<ManoHand> h;
 	switch (hand)
 	{
 	case Hand::RIGHT:
@@ -185,7 +185,7 @@ Eigen::Vector2f computeProjection(Eigen::Vector4f point, SimpleCamera camera)
 
 std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand, SimpleCamera camera)
 {
-	ManoHand* h;
+	std::shared_ptr<ManoHand> h;
 	switch (hand)
 	{
 	case Hand::RIGHT:
@@ -215,7 +215,7 @@ std::array<std::array<float, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLo
 
 std::array<std::array<float, 2>, NUM_MANO_VERTICES> HandModel::get2DVertexLocations(Hand hand, SimpleCamera camera)
 {
-	ManoHand* h;
+	std::shared_ptr<ManoHand> h;
 	switch (hand)
 	{
 	case Hand::RIGHT:
@@ -237,7 +237,7 @@ std::array<std::array<float, 2>, NUM_MANO_VERTICES> HandModel::get2DVertexLocati
 
 void HandModel::applyTransformation(Eigen::Matrix4f transform, Hand hand)
 {
-	ManoHand* h;
+	std::shared_ptr<ManoHand> h;
 	switch (hand)
 	{
 	case Hand::RIGHT:
@@ -494,21 +494,21 @@ bool HandModel::saveOPJoints()
 	return true;
 }
 
-bool HandModel::hasAncestor(ManoHand* h, unsigned int joint_index)
+bool HandModel::hasAncestor(std::shared_ptr<ManoHand> h, unsigned int joint_index)
 {
 	if (!(*h->kinematic_tree).count(joint_index))
 		return false;
 	return (*h->kinematic_tree).at(joint_index) < NUM_MANO_JOINTS;
 }
 
-unsigned int HandModel::getAncestor(ManoHand* h, unsigned int joint_index)
+unsigned int HandModel::getAncestor(std::shared_ptr<ManoHand> h, unsigned int joint_index)
 {
 	if (!(*h->kinematic_tree).count(joint_index))
 		return -1;
 	return (*h->kinematic_tree).at(joint_index);
 }
 
-Eigen::Matrix4f HandModel::computeG(ManoHand* h, unsigned int joint_index)
+Eigen::Matrix4f HandModel::computeG(std::shared_ptr<ManoHand> h, unsigned int joint_index)
 {
 	Eigen::Matrix4f G_k = Eigen::Matrix4f::Identity();
 
@@ -561,7 +561,7 @@ Eigen::Matrix4f HandModel::computeG(ManoHand* h, unsigned int joint_index)
 	return G_k;*/
 }
 
-Eigen::Vector<float, 9> HandModel::computeR(ManoHand* h, unsigned int j)
+Eigen::Vector<float, 9> HandModel::computeR(std::shared_ptr<ManoHand> h, unsigned int j)
 {
 	Eigen::Matrix3f R_mat = rodrigues(Eigen::Vector3f(rightHand->theta[j * 3], rightHand->theta[j * 3 + 1], rightHand->theta[j * 3 + 2]));
 	R_mat.transposeInPlace();
