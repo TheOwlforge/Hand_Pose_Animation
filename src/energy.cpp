@@ -3,6 +3,7 @@
 #include "parser.hpp"
 #include "Eigen.h"
 #include "mano.h"
+#include "ceres.h"
 #include <iostream>
 #include <fstream>
 

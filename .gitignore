@@ -4,4 +4,8 @@
 *.user
 bin/
 bin-int/
+deps/ceres
+deps/glog-installed
+deps/glog
+deps/ceres-solver
 .vs/
