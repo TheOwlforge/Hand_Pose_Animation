@@ -6,7 +6,7 @@
 #include "ceres/ceres.h"
 #include <iostream>
 #include <fstream>
-
+//#define CERES_USE_CXX_THREADS
 struct EnergyCostFunction
 {
 	EnergyCostFunction(const float pointX_, const float pointY_, const float weight_, HandModel hands_, const int iteration_, const Hand LorR_)
