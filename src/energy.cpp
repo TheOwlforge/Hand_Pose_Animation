@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "camera.h"
+#include "energy.h"
 
 struct EnergyCostFunction
 {
@@ -84,7 +85,7 @@ private:
 	Hand left_or_right; 
 };
 
-void run()
+void runEnergy()
 {
 	// Read OpenPose keypoints
 	std::string filename;
