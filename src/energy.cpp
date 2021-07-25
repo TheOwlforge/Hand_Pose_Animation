@@ -26,16 +26,51 @@ struct EnergyCostFunction
 		meshlabcam.m_x = 765;
 		meshlabcam.m_y = 449;
 
+		SimpleCamera denniscam;
+
 		//TODO: Bring the initialization outside
 		HandModel testHand("mano/model/mano_right.json", "mano/model/mano_left.json");
 
+		std::array<double, MANO_THETA_SIZE> rnd1 = std::array<double, MANO_THETA_SIZE>();
+		std::array<double, MANO_BETA_SIZE> rnd2 = std::array<double, MANO_BETA_SIZE>();
+
+		double* testrnd1 = &rnd1[0];
+		double* testrnd2 = &rnd2[0];
+
+		const T* const constrnd1 = (const T* const)testrnd1;
+		const T* const constrnd2 = (const T* const)testrnd2;
+
+
 		//create MANO surface thorugh setting shape and pose parameters for predefined Hand Model 
+		std::cout << "Setting the model parameters pose and shape..." << std::endl;
+		/*std::cout << "Pose: ";
+		for (int i = 0; i < MANO_THETA_SIZE; i++)
+		{
+			std::cout << pose[i] << " ";
+		}
+		std::cout << std::endl;*/
+		
 		testHand.setModelParameters((double*)shape, (double*)pose, left_or_right);
+		//testHand.setModelParameters(rnd1.data(), rnd2.data(), Hand::RIGHT);
+		//testHand.setModelParameters((double*)constrnd1, (double*)constrnd2, Hand::RIGHT);
+
+		//Translate and rotate (proper for onehand1 dataset only!!!
+		testHand.applyRotation(0.5 * M_PI, 0, M_PI, Hand::RIGHT);
+		testHand.applyTranslation(Eigen::Vector3f(0.03, 0.11, 1.8), Hand::RIGHT);
 
 		//transform MANO to OpenPose and Project to 2D given camera intrinsics
-		std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = testHand.get2DJointLocations(left_or_right, meshlabcam);
+		std::cout << "Transforming to OpenPose in 2D..." << std::endl;
+		std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = testHand.get2DJointLocations(left_or_right, denniscam);
+
+		std::cout << "Projected hand keypoints: ";
+		for (int i = 0; i < NUM_OPENPOSE_KEYPOINTS; i++)
+		{
+			std::cout << hand_projected[i][0] << " ";
+		}
+		std::cout << std::endl;
 
 		//simple, weighted L1 norm
+		std::cout << "Computing the residual with: weight: " << weight << " keypoint: " << pointX << " predicted: " << hand_projected[i][0] << std::endl;
 		residual[0] = T(weight) * (hand_projected[i][0] - T(pointX) + (hand_projected[i][1] - T(pointY)));
 
 		//reset hand shape
@@ -61,7 +96,8 @@ int run(int argc, char** argv)
 		filename = argv[1];
 	}
 	else {
-		filename = "samples/artificial/01/keypoints01.json";
+		//filename = "samples/artificial/01/keypoints01.json";
+		filename = "samples/pictures/onehand1_keypoints.json";
 	}
 
 	std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> keypoints = Parser::readJsonCV(filename);
@@ -71,10 +107,10 @@ int run(int argc, char** argv)
 
 
 	// Define initial values for parameters of pose and shape 
-	std::array<double, MANO_THETA_SIZE> poseInitial;
-	std::array<double, MANO_BETA_SIZE> shapeInitial;
-	HandModel::fillRandom(&poseInitial, 0.5f);
-	HandModel::fillRandom(&shapeInitial, 0.5f);
+	std::array<double, MANO_THETA_SIZE> poseInitial = std::array<double, MANO_THETA_SIZE>();;
+	std::array<double, MANO_BETA_SIZE> shapeInitial = std::array<double, MANO_BETA_SIZE>();;
+	//HandModel::fillRandom(&poseInitial, 0.5f);
+	//HandModel::fillRandom(&shapeInitial, 0.5f);
 
 	// Assign initial values to parameters
 	std::array<double, MANO_THETA_SIZE> pose = poseInitial;
@@ -92,9 +128,9 @@ int run(int argc, char** argv)
 	for (int i = 0; i < NUM_KEYPOINTS; ++i)
 	{
 		ceres::CostFunction* cost_function =
-			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
+			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 10, 48>(
 				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right));
-		problem.AddResidualBlock(cost_function, nullptr, &shape[0], &pose[0]);
+		problem.AddResidualBlock(cost_function, nullptr, &shapeInitial[0], &poseInitial[0]);
 
 		//problem.AddResidualBlock(
 		//	new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
