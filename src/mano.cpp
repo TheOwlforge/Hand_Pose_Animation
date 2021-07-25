@@ -183,7 +183,7 @@ Eigen::Vector2f computeProjection(Eigen::Vector4f point, SimpleCamera camera)
 	return Eigen::Vector2f(result.x(), result.y());
 }
 
-std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand, SimpleCamera camera) const
+std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand, SimpleCamera& camera) const
 {
 	std::shared_ptr<ManoHand> h;
 	switch (hand)
@@ -213,7 +213,7 @@ std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointL
 	return result;
 }
 
-std::array<std::array<double, 2>, NUM_MANO_VERTICES> HandModel::get2DVertexLocations(Hand hand, SimpleCamera camera) const
+std::array<std::array<double, 2>, NUM_MANO_VERTICES> HandModel::get2DVertexLocations(Hand hand, SimpleCamera& camera) const
 {
 	std::shared_ptr<ManoHand> h;
 	switch (hand)

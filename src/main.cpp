@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "mano.h"
 #include "parser.hpp"
+#include "transopt.h"
 
 // declare static variables for parser once globally
 // cannot be done in parser.hpp to avoid errors when including in multiple files
@@ -12,4 +13,5 @@ int main(int argc, char* argv[])
 {
 	Parser::testJson();
 	HandModel::test();
+	testTransOptimization();
 }
