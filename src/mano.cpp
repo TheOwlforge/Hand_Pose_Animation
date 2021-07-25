@@ -195,27 +195,12 @@ std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointL
 
 	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> result{};
 
-	//debug log
-	std::cout << "MANO result after initialization: ";
-	for (int i = 0; i < NUM_OPENPOSE_KEYPOINTS; i++)
-	{
-		std::cout << result[i][0] << " ";
-	}
-	std::cout << std::endl;
-
 	std::array<int, NUM_MANO_JOINTS> opIndex = { 0, 5, 6, 7, 9, 10, 11, 17, 18, 19, 13, 14, 15, 1, 2, 3 };
 	for (int j = 0; j < NUM_MANO_JOINTS; j++)
 	{
 		Eigen::Vector2f proj = computeProjection(h->joints[j], camera);
 		result[opIndex[j]] = { proj.x(), proj.y() };
 	}
-	//debug log
-	std::cout << "MANO result after projection: ";
-	for (int i = 0; i < NUM_OPENPOSE_KEYPOINTS; i++)
-	{
-		std::cout << result[i][0] << " ";
-	}
-	std::cout << std::endl;
 
 	// add 5 additional joints for openpose
 	std::array<int, 5> opIndexAdd = { 4, 8, 12, 16, 20};

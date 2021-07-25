@@ -31,15 +31,10 @@ struct EnergyCostFunction
 		//TODO: Bring the initialization outside
 		HandModel testHand("mano/model/mano_right.json", "mano/model/mano_left.json");
 
-		std::array<double, MANO_THETA_SIZE> rnd1 = std::array<double, MANO_THETA_SIZE>();
-		std::array<double, MANO_BETA_SIZE> rnd2 = std::array<double, MANO_BETA_SIZE>();
+		std::cout << typeid(pose[0]).name() << std::endl;
 
-		double* testrnd1 = &rnd1[0];
-		double* testrnd2 = &rnd2[0];
-
-		const T* const constrnd1 = (const T* const)testrnd1;
-		const T* const constrnd2 = (const T* const)testrnd2;
-
+		//std::array<double, MANO_THETA_SIZE> rnd1 = std::array<double, MANO_THETA_SIZE>();
+		//std::array<double, MANO_BETA_SIZE> rnd2 = std::array<double, MANO_BETA_SIZE>();
 
 		//create MANO surface thorugh setting shape and pose parameters for predefined Hand Model 
 		std::cout << "Setting the model parameters pose and shape..." << std::endl;
@@ -51,6 +46,7 @@ struct EnergyCostFunction
 		std::cout << std::endl;*/
 		
 		testHand.setModelParameters((double*)shape, (double*)pose, left_or_right);
+		//testHand.setModelParameters(sh, po, left_or_right);
 		//testHand.setModelParameters(rnd1.data(), rnd2.data(), Hand::RIGHT);
 		//testHand.setModelParameters((double*)constrnd1, (double*)constrnd2, Hand::RIGHT);
 
@@ -88,17 +84,13 @@ private:
 	Hand left_or_right; 
 };
 
-int run(int argc, char** argv)
+void run()
 {
 	// Read OpenPose keypoints
 	std::string filename;
-	if (argc > 1) {
-		filename = argv[1];
-	}
-	else {
-		//filename = "samples/artificial/01/keypoints01.json";
-		filename = "samples/pictures/onehand1_keypoints.json";
-	}
+	//filename = "samples/artificial/01/keypoints01.json";
+	filename = "samples/pictures/onehand1_keypoints.json";
+
 
 	std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> keypoints = Parser::readJsonCV(filename);
 
@@ -115,6 +107,8 @@ int run(int argc, char** argv)
 	// Assign initial values to parameters
 	std::array<double, MANO_THETA_SIZE> pose = poseInitial;
 	std::array<double, MANO_BETA_SIZE> shape = shapeInitial;
+	pose[5] = 0.8;
+	shape[5] = 0.4;
 
 	//create initial HandModel for further optimization
 	HandModel hands_to_optimize("mano/model/mano_right.json", "mano/model/mano_left.json");
@@ -130,12 +124,7 @@ int run(int argc, char** argv)
 		ceres::CostFunction* cost_function =
 			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 10, 48>(
 				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right));
-		problem.AddResidualBlock(cost_function, nullptr, &shapeInitial[0], &poseInitial[0]);
-
-		//problem.AddResidualBlock(
-		//	new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
-		//		new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right)),
-		//	nullptr, &shape[0], &pose[0]);
+		problem.AddResidualBlock(cost_function, nullptr, &shape[0], &pose[0]);
 	}
 
 	ceres::Solver::Options options;
@@ -163,6 +152,4 @@ int run(int argc, char** argv)
 	std::cout << std::endl;
 
 	system("pause");
-
-	return 0;
 }
