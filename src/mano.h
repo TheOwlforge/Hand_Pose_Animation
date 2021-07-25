@@ -78,12 +78,17 @@ public:
 	HandModel(std::string rightHand_filename, std::string leftHand_filename);
 	~HandModel();
 
+	std::shared_ptr<ManoHand> getHand(Hand hand) const;
+
 	std::array<double, MANO_THETA_SIZE> getMeanShape(Hand hand) const;
 	void setModelParameters(const double* const theta, const double* const beta, Hand hand);
 	void reset();
 
 	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand, SimpleCamera& camera) const;
 	std::array<std::array<double, 2>, NUM_MANO_VERTICES> get2DVertexLocations(Hand hand, SimpleCamera& camera) const;
+
+	std::array<std::array<double, 3>, NUM_OPENPOSE_KEYPOINTS> getFullJoints(Hand hand) const;
+
 	void applyTranslation(Eigen::Vector3f t, Hand hand);
 	void applyScale(float factor, Hand hand);
 	void applyRotation(float alpha, float beta, float gamma, Hand hand); //for testing purposes only, not meant to be used later as global rotation is included in theta
@@ -92,11 +97,11 @@ public:
 	bool saveMANOJoints() const;
 	bool saveOPJoints() const;
 
-	void display(const char* filename, Hand hand) const;
+	void display(const char* filename, Hand hand, SimpleCamera& camera) const;
 
 	static void test()
 	{
-
+		SimpleCamera c;
 		HandModel* hands = new HandModel("mano/model/mano_right.json", "mano/model/mano_left.json");
 
 		std::array<double, MANO_THETA_SIZE> theta = hands->getMeanShape(Hand::RIGHT);
@@ -111,7 +116,7 @@ public:
 		hands->saveMANOJoints();
 		hands->saveOPJoints();
 
-		hands->display("samples/pictures/onehand1.png", Hand::RIGHT);
+		hands->display("samples/pictures/onehand1.png", Hand::RIGHT, c);
 
 		delete hands;
 	}

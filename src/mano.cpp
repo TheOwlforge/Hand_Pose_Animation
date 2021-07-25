@@ -17,8 +17,25 @@ HandModel::~HandModel()
 	//delete leftHand;
 }
 
+std::shared_ptr<ManoHand> HandModel::getHand(Hand hand) const
+{
+	std::shared_ptr<ManoHand> h;
+	switch (hand)
+	{
+	case Hand::RIGHT:
+		h = rightHand;
+		break;
+	case Hand::LEFT:
+		h = leftHand;
+		break;
+	}
+	return h;
+}
+
 void HandModel::reset()
 {
+	std::cout << "Resetting the hands" << std::endl << std::endl;
+
 	for (int i = 0; i < NUM_MANO_VERTICES; i++)
 	{
 		rightHand->vertices[i] = Eigen::Vector4f(rightHand->T[i].x(), rightHand->T[i].y(), rightHand->T[i].z(), 1);
@@ -67,18 +84,7 @@ void HandModel::setModelParameters(const double* const theta, const double* cons
 {
 	std::cout << "Applying Model Parameters" << std::endl;
 
-	std::shared_ptr<ManoHand> h;
-	switch (hand)
-	{
-	case Hand::RIGHT:
-		h = rightHand;
-		break;
-	case Hand::LEFT:
-		h = leftHand;
-		break;
-	default:
-		return;
-	}
+	std::shared_ptr<ManoHand> h = getHand(hand);
 
 	std::copy_n(theta, MANO_THETA_SIZE, h->theta.begin());
 	std::copy_n(beta, MANO_BETA_SIZE, h->beta.begin());
@@ -185,16 +191,7 @@ Eigen::Vector2f computeProjection(Eigen::Vector4f point, SimpleCamera camera)
 
 std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointLocations(Hand hand, SimpleCamera& camera) const
 {
-	std::shared_ptr<ManoHand> h;
-	switch (hand)
-	{
-	case Hand::RIGHT:
-		h = rightHand;
-		break;
-	case Hand::LEFT:
-		h = leftHand;
-		break;
-	}
+	std::shared_ptr<ManoHand> h = getHand(hand);
 
 	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> result{};
 	std::array<int, NUM_MANO_JOINTS> opIndex = { 0, 5, 6, 7, 9, 10, 11, 17, 18, 19, 13, 14, 15, 1, 2, 3 };
@@ -213,18 +210,29 @@ std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> HandModel::get2DJointL
 	return result;
 }
 
+std::array<std::array<double, 3>, NUM_OPENPOSE_KEYPOINTS> HandModel::getFullJoints(Hand hand) const
+{
+	std::shared_ptr<ManoHand> h = getHand(hand);
+
+	std::array<std::array<double, 3>, NUM_OPENPOSE_KEYPOINTS> result{};
+	std::array<int, NUM_MANO_JOINTS> opIndex = { 0, 5, 6, 7, 9, 10, 11, 17, 18, 19, 13, 14, 15, 1, 2, 3 };
+	for (int j = 0; j < NUM_MANO_JOINTS; j++)
+	{
+		result[opIndex[j]] = { h->joints[j].x(), h->joints[j].y(), h->joints[j].z() };
+	}
+	// add 5 additional joints for openpose
+	std::array<int, 5> opIndexAdd = { 4, 8, 12, 16, 20 };
+	for (int j = 0; j < 5; j++)
+	{
+		Eigen::Vector4f addJoint = h->vertices[ADDITIONAL_JOINTS[j]];
+		result[opIndexAdd[j]] = { addJoint.x(), addJoint.y(), addJoint.z() };
+	}
+	return result;
+}
+
 std::array<std::array<double, 2>, NUM_MANO_VERTICES> HandModel::get2DVertexLocations(Hand hand, SimpleCamera& camera) const
 {
-	std::shared_ptr<ManoHand> h;
-	switch (hand)
-	{
-	case Hand::RIGHT:
-		h = rightHand;
-		break;
-	case Hand::LEFT:
-		h = leftHand;
-		break;
-	}
+	std::shared_ptr<ManoHand> h = getHand(hand);
 
 	std::array<std::array<double, 2>, NUM_MANO_VERTICES> result{};
 	for (int j = 0; j < NUM_MANO_VERTICES; j++)
@@ -237,16 +245,8 @@ std::array<std::array<double, 2>, NUM_MANO_VERTICES> HandModel::get2DVertexLocat
 
 void HandModel::applyTransformation(Eigen::Matrix4f transform, Hand hand)
 {
-	std::shared_ptr<ManoHand> h;
-	switch (hand)
-	{
-	case Hand::RIGHT:
-		h = rightHand;
-		break;
-	case Hand::LEFT:
-		h = leftHand;
-		break;
-	}
+	std::shared_ptr<ManoHand> h = getHand(hand);
+
 	for (int i = 0; i < NUM_MANO_VERTICES; i++)
 	{
 		h->vertices[i] = transform * h->vertices[i];
@@ -259,7 +259,7 @@ void HandModel::applyTransformation(Eigen::Matrix4f transform, Hand hand)
 
 void HandModel::applyTranslation(Eigen::Vector3f t, Hand hand)
 {
-	std::cout << "Applying Transformation" << std::endl;
+	std::cout << "Applying Transformation " << t.x() << " " << t.y() << " " << t.z() << std::endl;
 
 	Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
 	transform.block<3, 1>(0, 3) = t;
@@ -584,9 +584,8 @@ Eigen::Matrix3f HandModel::rodrigues(Eigen::Vector3f w)
 	return result;
 }
 
-void HandModel::display(const char* filename, Hand hand) const
+void HandModel::display(const char* filename, Hand hand, SimpleCamera& c) const
 {
-	SimpleCamera c = SimpleCamera();
 	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> j = get2DJointLocations(hand, c);
 	std::array<std::array<double, 2>, NUM_MANO_VERTICES> v = get2DVertexLocations(hand, c);
 
@@ -627,16 +626,7 @@ void HandModel::display(const char* filename, Hand hand) const
 
 std::array<double, MANO_THETA_SIZE> HandModel::getMeanShape(Hand hand) const
 {
-	std::shared_ptr<ManoHand> h;
-	switch (hand)
-	{
-	case Hand::RIGHT:
-		h = rightHand;
-		break;
-	case Hand::LEFT:
-		h = leftHand;
-		break;
-	}
+	std::shared_ptr<ManoHand> h = getHand(hand);
 
 	std::array<double, MANO_THETA_SIZE> result = {};
 	for (uint16_t i = 0; i < (NUM_MANO_JOINTS - 1) * 3; i++)
