@@ -93,12 +93,12 @@ public:
 
 	void display(const char* filename, Hand hand);
 
-	template <int T>
-	static void fillRandom(std::array<float, T>* test, float bounds)
+	template <int T, typename T2>
+	static void fillRandom(std::array<T2, T>* test, float bounds)
 	{
 		std::random_device rd;
 		std::mt19937 gen(rd());
-		std::uniform_real_distribution<float> distrib(0, 1);
+		std::uniform_real_distribution<T2> distrib(0, 1);
 
 		for (auto& val : *test) {
 			val = distrib(gen) * 2 * bounds - bounds;
