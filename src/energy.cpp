@@ -11,8 +11,8 @@
 
 struct EnergyCostFunction
 {
-	EnergyCostFunction(double pointX_, double pointY_, double weight_, HandModel hands_, const int iteration_, Hand LorR_)
-		: pointX(pointX_), pointY(pointY_), weight(weight_), hands_to_optimize(hands_), i(iteration_), left_or_right(LorR_)
+	EnergyCostFunction(std::array<double, NUM_KEYPOINTS> pointX_, std::array<double, NUM_KEYPOINTS> pointY_, std::array<double, NUM_KEYPOINTS> weight_, HandModel hands_, Hand LorR_)
+		: pointX(pointX_), pointY(pointY_), weight(weight_), hands_to_optimize(hands_), left_or_right(LorR_)
 	{
 
 	}
@@ -32,7 +32,7 @@ struct EnergyCostFunction
 		//TODO: Bring the initialization outside
 		HandModel testHand("mano/model/mano_right.json", "mano/model/mano_left.json");
 
-		std::cout << typeid(pose[0]).name() << std::endl;
+		std::cout << "Pose:typeid:" << pose[5] << std::endl;
 
 		//std::array<double, MANO_THETA_SIZE> rnd1 = std::array<double, MANO_THETA_SIZE>();
 		//std::array<double, MANO_BETA_SIZE> rnd2 = std::array<double, MANO_BETA_SIZE>();
@@ -52,7 +52,7 @@ struct EnergyCostFunction
 		//testHand.setModelParameters((double*)constrnd1, (double*)constrnd2, Hand::RIGHT);
 
 		//Translate and rotate (proper for onehand1 dataset only!!!
-		testHand.applyRotation(0.5 * M_PI, 0, M_PI, Hand::RIGHT);
+	        testHand.applyRotation(0.5 * M_PI, 0, M_PI, Hand::RIGHT);
 		testHand.applyTranslation(Eigen::Vector3f(0.03, 0.11, 1.8), Hand::RIGHT);
 
 		//transform MANO to OpenPose and Project to 2D given camera intrinsics
@@ -67,8 +67,17 @@ struct EnergyCostFunction
 		std::cout << std::endl;
 
 		//simple, weighted L1 norm
-		std::cout << "Computing the residual with: weight: " << weight << " keypoint: " << pointX << " predicted: " << hand_projected[i][0] << std::endl;
-		residual[0] = T(weight) * (hand_projected[i][0] - T(pointX) + (hand_projected[i][1] - T(pointY)));
+		//std::cout << "Computing the residual with: weight: " << weight << " keypoint: " << pointX << " predicted: " << hand_projected[0][0] << std::endl;
+
+		residual[0] = T(0);
+		//residual[0] += T(pose[0]) - T(100);
+		for (int i = 0; i < NUM_KEYPOINTS; i++) {
+		   residual[0] += T(weight[i]) * (T(hand_projected[i][0]) - T(pointX[i]) + (T(hand_projected[i][1]) - T(pointY[i])));
+		    std::cout << "Computing the residual with: weight: " << weight[i] << " keypoint: " << pointX[i] << " predicted: " << hand_projected[i][0] << std::endl;
+		    std::cout << T(weight[i]) * (T(hand_projected[i][0]) - T(pointX[i]) + (T(hand_projected[i][1]) - T(pointY[i]))) << std::endl;
+		}
+
+		std::cout << "Residual: " << residual[0] << std::endl;
 
 		//reset hand shape
 		testHand.reset();
@@ -77,11 +86,10 @@ struct EnergyCostFunction
 	}
 
 private:
-	double pointX;
-	double pointY;
-	double weight;
+	std::array<double, NUM_KEYPOINTS> pointX;
+	std::array<double, NUM_KEYPOINTS> pointY;
+	std::array<double, NUM_KEYPOINTS> weight;
 	HandModel hands_to_optimize;
-	const int i;
 	Hand left_or_right; 
 };
 
@@ -98,6 +106,16 @@ void runEnergy()
 	std::array<double, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
 	std::array<double, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
 
+	std::array<double, NUM_KEYPOINTS> weights;
+	std::array<double, NUM_KEYPOINTS> x_values;
+	std::array<double, NUM_KEYPOINTS> y_values;
+
+	for (int i = 0; i < NUM_KEYPOINTS; i++) {
+	  x_values[i] = right_keypoints[3 * i];
+	  y_values[i] = right_keypoints[3 * i + 1];
+	  weights[i] = right_keypoints[3 * i + 2];
+	}
+
 
 	// Define initial values for parameters of pose and shape 
 	std::array<double, MANO_THETA_SIZE> poseInitial = std::array<double, MANO_THETA_SIZE>();;
@@ -108,31 +126,41 @@ void runEnergy()
 	// Assign initial values to parameters
 	std::array<double, MANO_THETA_SIZE> pose = poseInitial;
 	std::array<double, MANO_BETA_SIZE> shape = shapeInitial;
-	pose[5] = 0.8;
-	shape[5] = 0.4;
+
+	for (int i = 0; i < MANO_THETA_SIZE; i++) {
+	  pose[i] = (i + 10) / 2.0;
+	}
+
+	for (int i = 0; i < MANO_BETA_SIZE; i++) {
+	  shape[i] = (i + 10) / 2.0;
+	}
 
 	//create initial HandModel for further optimization
 	HandModel hands_to_optimize("mano/model/mano_right.json", "mano/model/mano_left.json");
 
 	// FOR TESTING: we use only the right hand 
 	Hand left_or_right = Hand::RIGHT;
+	pose = hands_to_optimize.getMeanShape(left_or_right);
+	pose[5] = 0.8;
+	shape[5] = 0.4;
 
 	ceres::Problem problem;
 
 	// Residual block for right hand 
-	for (int i = 0; i < NUM_KEYPOINTS; ++i)
-	{
-		ceres::CostFunction* cost_function =
-			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 10, 48>(
-				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right));
-		problem.AddResidualBlock(cost_function, nullptr, &shape[0], &pose[0]);
-	}
+
+	ceres::CostFunction* cost_function =
+	  new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 10, 48>(
+	     new EnergyCostFunction(x_values, y_values, weights, hands_to_optimize,
+				    left_or_right));
+	problem.AddResidualBlock(cost_function, nullptr, &shape[0], &pose[0]);
+
 
 	ceres::Solver::Options options;
-	options.max_num_iterations = 25;
+	options.max_num_iterations = 50;
 	options.linear_solver_type = ceres::DENSE_QR;
 	options.minimizer_progress_to_stdout = true;
 
+	std::cout << "STARTTTTTTTTTTT!" << std::endl;
 	ceres::Solver::Summary summary;
 	ceres::Solve(options, &problem, &summary);
 
