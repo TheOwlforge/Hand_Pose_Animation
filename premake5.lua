@@ -41,6 +41,7 @@ project "HandPose"
             OPENPOSE_DIR .. "3rdparty/windows/caffe_cpu/lib",
             OPENPOSE_DIR .. "3rdparty/windows/caffe3rdparty/lib"
         }
+defines { "CERES_USE_CXX_THREADS" }
     filter {} --reset
 
     includedirs 
