@@ -13,11 +13,12 @@
 #define VIDEO 0
 
 #define PRIOR_COEFF_EST    0.5  // Balancing term for surface estimation difference prior
-#define PRIOR_COEFF_SHAPE  0.5  // Balancing term for difference between shape parameters and mean estimation of shape parameters
-#define PRIOR_COEFF_POSE   0.5  // Balancing term for pose prior
+#define PRIOR_COEFF_MEAN  0.5  // Balancing term for difference between pose/shape parameters and mean estimation of pose/shape parameters
+//#define PRIOR_COEFF_POSE   0.5  // Balancing term for pose prior
 #define PRIOR_COEFF_TEMP   0.5  // Balancing term for temporal regularization
 
-void optimize_params(std::string filename, int num_sequences, std::array<double, MANO_BETA_SIZE> mean_shape, std::array<double, MANO_THETA_SIZE> prev_pose, std::array<double, MANO_BETA_SIZE> prev_shape);
+std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> prev_surface_est;
+std::array<double, MANO_THETA_SIZE + MANO_BETA_SIZE> optimize_params(std::string filename, int num_sequences, std::array<double, MANO_BETA_SIZE> mean_shape, std::array<double, MANO_THETA_SIZE> mean_pose, std::array<double, MANO_THETA_SIZE> prev_pose, std::array<double, MANO_BETA_SIZE> prev_shape);
 
 //Some poor attempts to include interfacing
 /*struct setModelParametersFunctor {
@@ -39,8 +40,8 @@ void optimize_params(std::string filename, int num_sequences, std::array<double,
 
 struct EnergyCostFunction
 {
-	EnergyCostFunction(double pointX_, double pointY_, double weight_, const int iteration_, Hand LorR_, const std::array<double, MANO_BETA_SIZE> mean_shape_, const int num_sequences_)
-		: pointX(pointX_), pointY(pointY_), weight(weight_), i(iteration_), left_or_right(LorR_), mean_shape(mean_shape_), num_sequences(num_sequences_)
+  EnergyCostFunction(double pointX_, double pointY_, double weight_, const int iteration_, Hand LorR_, const std::array<double, MANO_BETA_SIZE> mean_shape_, const std::array<double, MANO_THETA_SIZE> mean_pose_, const int num_sequences_, const std::array<double, MANO_BETA_SIZE> prev_shape_, const std::array<double, MANO_THETA_SIZE> prev_pose_)
+    : pointX(pointX_), pointY(pointY_), weight(weight_), i(iteration_), left_or_right(LorR_), mean_shape(mean_shape_), mean_pose(mean_pose_), num_sequences(num_sequences_), prev_shape(prev_shape_), prev_pose(prev_pose_)
 	{
 		//Some more attempts to include interfacing
 		//set_model_params.reset(new ceres::CostFunctionToFunctor<1, 48, 10>(
@@ -89,44 +90,50 @@ struct EnergyCostFunction
 
 		
 		//DIFFERENT IDEAS FOR THE PRIORS
-		/*
+		
 		// Prior 1: Make previous hand projections closer to the previous one.
-
+		
 		if (num_sequences > 0) {
-		  residual[0] += PRIOR_COEFF_EST * pow((hand_projected[i][0] - prev_surface_est[i][0]) + (hand_projected[i][1] - prev_surface_est[i][0]), 2).sum();
+		  residual[0] += PRIOR_COEFF_EST * pow((T(hand_projected[i][0]) - T(prev_surface_est[i][0])) + (T(hand_projected[i][1]) - T(prev_surface_est[i][0])), 2);
 		}
 
-		// Prior 2: Make shape parameters closer to mean
+		// Prior 2: Make pose/shape parameters closer to mean
 
-		residual[0] += PRIOR_COEFF_SHAPE * pow(shape - mean_shape, 2).sum();
+		for (int i = 0; i < MANO_BETA_SIZE; i++) {
+		  residual[0] += PRIOR_COEFF_MEAN * pow(T(shape[i]) - T(mean_shape[i]), 2);
+		}
 
-		// Prior 3: Gaussian pose prior
-		
-		residual[0] += PRIOR_COEFF_POSE * pow(pose, 2).sum();
+		for (int i = 0; i < MANO_THETA_SIZE; i++) {
+		  residual[0] += PRIOR_COEFF_MEAN * pow(T(pose[i]) - T(mean_pose[i]), 2);
+		}
 
 		//  Optional:  Temporal Regularizer: zero-velocity prior (Real-time Pose and Shape Reconstruction of Two Interacting Hands With a Single Depth Camera)
 
-		residual[0] += PRIOR_COEFF_TEMP * (pow(shape - prev_shape, 2).sum() + pow(pose - prev_pose, 2).sum());
+		for (int i = 0; i < MANO_BETA_SIZE; i++) {
+		  residual[0] += PRIOR_COEFF_TEMP * pow(T(shape[i]) - T(prev_shape[i]), 2);
+		}
+
+		for (int i = 0; i < MANO_THETA_SIZE; i++) {
+		  residual[0] += PRIOR_COEFF_TEMP * pow(T(pose[i]) - T(prev_pose[i]), 2);
+		}
 
 		prev_surface_est = hand_projected;  // save current estimations for next iteration
-		*/
-
-
-		//reset hand shape
-		testHand.reset();
+		testHand.reset(); 
 
 		return true;
 	}
-
 private:
 	double pointX;
 	double pointY;
 	double weight;
 	const int i;
 	const Hand left_or_right;
-    static std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> prev_surface_est;
-    const std::array<double, MANO_BETA_SIZE> mean_shape;
-    const int num_sequences;
+
+        const std::array<double, MANO_BETA_SIZE> mean_shape;
+        const std::array<double, MANO_THETA_SIZE> mean_pose;
+        const int num_sequences;
+        const std::array<double, MANO_THETA_SIZE> prev_pose;
+        const std::array<double, MANO_BETA_SIZE> prev_shape;
 };
 
 void runEnergy()
@@ -145,37 +152,74 @@ void runEnergy()
 	if (VIDEO == 1) {
 		int num_sequences = 0;
 		std::array<double, MANO_BETA_SIZE> mean_shape = std::array<double, MANO_BETA_SIZE>();
+		std::array<double, MANO_THETA_SIZE> mean_pose = std::array<double, MANO_THETA_SIZE>();
 
 		std::array<double, MANO_THETA_SIZE> prev_pose = std::array<double, MANO_THETA_SIZE>();
 		std::array<double, MANO_BETA_SIZE> prev_shape = std::array<double, MANO_BETA_SIZE>();
+		std::array<double, MANO_THETA_SIZE> pose = std::array<double, MANO_THETA_SIZE>();
+		std::array<double, MANO_BETA_SIZE> shape = std::array<double, MANO_BETA_SIZE>();
+                
+		for (const auto& entry : std::experimental::filesystem::directory_iterator(path) {
+		        std::cout << entry.path() << std::endl;
 
-		for (const auto& entry : std::filesystem::directory_iterator(path)) {
-			std::cout << entry.path() << std::endl;
+    		        std::array<double, MANO_THETA_SIZE + MANO_BETA_SIZE> params = optimize_params(entry.path().string(), num_sequences, mean_shape, mean_pose, prev_pose, prev_shape);
 
-			//Optimization for parameters is not compiling correctly since optimize_params is a void and not a VectorXf function
-			//Ceres is not compatible with VectorXf input
-			optimize_params(entry.path().string(), num_sequences, mean_shape, prev_pose, prev_shape);
 
-			/*prev_pose = pose;
+			// Assign pose and shape parameters from output of optimize_params
+			
+			for (int i = 0; i < MANO_THETA_SIZE; i++) {
+			  pose[i] = params[i];
+			}
+			for (int i = 0; i < MANO_BETA_SIZE; i++) {
+			  shape[i] = params[MANO_THETA_SIZE + i];
+			}
+
+			// Assign current pose/shape to prev pose/shape
+			
+			prev_pose = pose;
 			prev_shape = shape;
 
-			mean_shape = (mean_shape * num_sequences + shape) / (num_sequences + 1);  // new mean shape after adding shape params in current iteration
-			*/
+
+			// Calculate mean pose/shape
+
+			for (int i = 0; i < MANO_BETA_SIZE; i++) {
+			  mean_shape[i] = (mean_shape[i] * num_sequences + shape[i]) / (num_sequences + 1);
+			}
+
+			for (int i = 0; i < MANO_THETA_SIZE; i++) {
+			  mean_pose[i] = (mean_pose[i] * num_sequences + pose[i]) / (num_sequences + 1);
+			}
+			
 			num_sequences++;
+
 		}
-	}
+	}	
 	else {
 		int num_sequences = 0;
 		std::array<double, MANO_BETA_SIZE> mean_shape = std::array<double, MANO_BETA_SIZE>();
+		std::array<double, MANO_THETA_SIZE> mean_pose = std::array<double, MANO_THETA_SIZE>();
 
 		std::array<double, MANO_THETA_SIZE> prev_pose = std::array<double, MANO_THETA_SIZE>();
 		std::array<double, MANO_BETA_SIZE> prev_shape = std::array<double, MANO_BETA_SIZE>();
+		std::array<double, MANO_THETA_SIZE> pose = std::array<double, MANO_THETA_SIZE>();
+		std::array<double, MANO_BETA_SIZE> shape = std::array<double, MANO_BETA_SIZE>();
 
-		optimize_params(path, num_sequences, mean_shape, prev_pose, prev_shape);
+		// Get params (pose + shape parameters)
+
+		std::array<double, MANO_THETA_SIZE + MANO_BETA_SIZE> params = optimize_params(path, num_sequences, mean_shape, mean_pose, prev_pose, prev_shape);
+
+		// Decode params into pose and shape arrays
+		
+		for (int i = 0; i < MANO_THETA_SIZE; i++) {
+		  pose[i] = params[i];
+		}
+		for (int i = 0; i < MANO_BETA_SIZE; i++) {
+		  shape[i] = params[MANO_THETA_SIZE + i];
+		}
 	}
 }
 
-void optimize_params(std::string filename, int num_sequences, std::array<double, MANO_BETA_SIZE> mean_shape, std::array<double, MANO_THETA_SIZE> prev_pose, std::array<double, MANO_BETA_SIZE> prev_shape) 
+std::array<double, MANO_THETA_SIZE + MANO_BETA_SIZE> optimize_params(std::string filename, int num_sequences, std::array<double, MANO_BETA_SIZE> mean_shape, std::array<double, MANO_THETA_SIZE> mean_pose, std::array<double, MANO_THETA_SIZE> prev_pose, std::array<double, MANO_BETA_SIZE> prev_shape) 
 {
 
 	std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> keypoints = Parser::readJsonCV(filename);
@@ -203,7 +247,7 @@ void optimize_params(std::string filename, int num_sequences, std::array<double,
 	{
 		ceres::CostFunction* cost_function =
 			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 10, 48>(
-				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], i, left_or_right, mean_shape, num_sequences));
+										       new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], i, left_or_right, mean_shape, mean_pose, num_sequences, prev_shape, prev_pose));
 		problem.AddResidualBlock(cost_function, nullptr, &shape[0], &pose[0]);
 	}
 
@@ -231,6 +275,19 @@ void optimize_params(std::string filename, int num_sequences, std::array<double,
 	}
 	std::cout << std::endl;
 
+	// Store all pose and shape params into params array
+
+	std::array<double, MANO_THETA_SIZE + MANO_BETA_SIZE> params;
+	
+	for (int i = 0; i < MANO_THETA_SIZE; i++) {
+	  params[i] = pose[i];
+	}
+	for (int i = 0; i < MANO_BETA_SIZE; i++) {
+	  params[MANO_THETA_SIZE + i] = shape[i];
+	}
+
+	return params;
+	
 	system("pause");
 }
 
