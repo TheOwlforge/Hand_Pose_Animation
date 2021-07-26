@@ -12,8 +12,10 @@ std::vector<cv::VideoWriter> Parser::videos;
 
 int main(int argc, char* argv[])
 {
-	//Parser::testJson();
-	//HandModel::test();
-	//testTransOptimization();
+	Parser::testJson();
+
 	runEnergy();
+
+	HandModel::test();
+	testTransOptimization();
 }
