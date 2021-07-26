@@ -9,12 +9,21 @@
 #include "camera.h"
 #include "energy.h"
 
+/*struct setModelParametersFunctor {
+	bool operator()(const double* pose, const double* shape, HandModel* hand) const
+	{
+		hand->setModelParameters(pose, shape, Hand::RIGHT);
+		return true;
+	}
+};*/
+
 struct EnergyCostFunction
 {
 	EnergyCostFunction(double pointX_, double pointY_, double weight_, HandModel hands_, const int iteration_, Hand LorR_)
 		: pointX(pointX_), pointY(pointY_), weight(weight_), hands_to_optimize(hands_), i(iteration_), left_or_right(LorR_)
 	{
-
+		//set_model_params.reset(new ceres::CostFunctionToFunctor<1, 48, 10>(
+		//	new ceres::NumericDiffCostFunction<setModelParametersFunctor, ceres::CENTRAL, 1, 48, 10>(new setModelParametersFunctor)));
 	}
 
 	template<typename T>
@@ -46,7 +55,9 @@ struct EnergyCostFunction
 		}
 		std::cout << std::endl;*/
 		
+		//(*set_model_params)(pose, shape, &testHand);
 		testHand.setModelParameters((double*)shape, (double*)pose, left_or_right);
+		//testHand.setModelParametersTemp(shape, pose, left_or_right);
 		//testHand.setModelParameters(sh, po, left_or_right);
 		//testHand.setModelParameters(rnd1.data(), rnd2.data(), Hand::RIGHT);
 		//testHand.setModelParameters((double*)constrnd1, (double*)constrnd2, Hand::RIGHT);
@@ -83,6 +94,7 @@ private:
 	HandModel hands_to_optimize;
 	const int i;
 	Hand left_or_right; 
+	//std::unique_ptr<ceres::CostFunctionToFunctor<1, 48, 10> > set_model_params;
 };
 
 void runEnergy()
