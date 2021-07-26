@@ -117,7 +117,10 @@ struct EnergyCostFunction
 			residual[0] += PRIOR_COEFF_TEMP * pow(T(pose[i]) - T(prev_pose[i]), 2);
 		}
 
-		prev_surface_est = hand_projected;  // save current estimations for next iteration
+		if (i == NUM_KEYPOINTS - 1) {
+		  prev_surface_est = hand_projected;  // save current estimations for next iteration
+		}
+
 		testHand.reset();
 
 		return true;
