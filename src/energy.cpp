@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "camera.h"
+#include "energy.h"
 
 struct EnergyCostFunction
 {
@@ -26,16 +27,47 @@ struct EnergyCostFunction
 		meshlabcam.m_x = 765;
 		meshlabcam.m_y = 449;
 
+		SimpleCamera denniscam;
+
 		//TODO: Bring the initialization outside
 		HandModel testHand("mano/model/mano_right.json", "mano/model/mano_left.json");
 
+		std::cout << typeid(pose[0]).name() << std::endl;
+
+		//std::array<double, MANO_THETA_SIZE> rnd1 = std::array<double, MANO_THETA_SIZE>();
+		//std::array<double, MANO_BETA_SIZE> rnd2 = std::array<double, MANO_BETA_SIZE>();
+
 		//create MANO surface thorugh setting shape and pose parameters for predefined Hand Model 
+		std::cout << "Setting the model parameters pose and shape..." << std::endl;
+		/*std::cout << "Pose: ";
+		for (int i = 0; i < MANO_THETA_SIZE; i++)
+		{
+			std::cout << pose[i] << " ";
+		}
+		std::cout << std::endl;*/
+		
 		testHand.setModelParameters((double*)shape, (double*)pose, left_or_right);
+		//testHand.setModelParameters(sh, po, left_or_right);
+		//testHand.setModelParameters(rnd1.data(), rnd2.data(), Hand::RIGHT);
+		//testHand.setModelParameters((double*)constrnd1, (double*)constrnd2, Hand::RIGHT);
+
+		//Translate and rotate (proper for onehand1 dataset only!!!
+		testHand.applyRotation(0.5 * M_PI, 0, M_PI, Hand::RIGHT);
+		testHand.applyTranslation(Eigen::Vector3f(0.03, 0.11, 1.8), Hand::RIGHT);
 
 		//transform MANO to OpenPose and Project to 2D given camera intrinsics
-		std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = testHand.get2DJointLocations(left_or_right, meshlabcam);
+		std::cout << "Transforming to OpenPose in 2D..." << std::endl;
+		std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> hand_projected = testHand.get2DJointLocations(left_or_right, denniscam);
+
+		std::cout << "Projected hand keypoints: ";
+		for (int i = 0; i < NUM_OPENPOSE_KEYPOINTS; i++)
+		{
+			std::cout << hand_projected[i][0] << " ";
+		}
+		std::cout << std::endl;
 
 		//simple, weighted L1 norm
+		std::cout << "Computing the residual with: weight: " << weight << " keypoint: " << pointX << " predicted: " << hand_projected[i][0] << std::endl;
 		residual[0] = T(weight) * (hand_projected[i][0] - T(pointX) + (hand_projected[i][1] - T(pointY)));
 
 		//reset hand shape
@@ -53,36 +85,31 @@ private:
 	Hand left_or_right; 
 };
 
-int run(int argc, char** argv)
+void runEnergy()
 {
 	// Read OpenPose keypoints
 	std::string filename;
-	if (argc > 1) {
-		filename = argv[1];
-	}
-	else {
-		filename = "samples/webcam_examples/000000000000_keypoints.json";
-	}
+	//filename = "samples/artificial/01/keypoints01.json";
+	filename = "samples/pictures/onehand1_keypoints.json";
+
 
 	std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> keypoints = Parser::readJsonCV(filename);
 
 	std::array<double, NUM_KEYPOINTS * 3> left_keypoints = keypoints[0];
 	std::array<double, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
 
-	//std::array<double, NUM_KEYPOINTS * 3> left_keypoints;
-	//std::array<double, NUM_KEYPOINTS * 3> right_keypoints;
-	
+
 	// Define initial values for parameters of pose and shape 
-	const VectorXf poseInitial = VectorXf::Random(MANO_THETA_SIZE);
-	const VectorXf shapeInitial = VectorXf::Random(MANO_BETA_SIZE);
+	std::array<double, MANO_THETA_SIZE> poseInitial = std::array<double, MANO_THETA_SIZE>();;
+	std::array<double, MANO_BETA_SIZE> shapeInitial = std::array<double, MANO_BETA_SIZE>();;
+	//HandModel::fillRandom(&poseInitial, 0.5f);
+	//HandModel::fillRandom(&shapeInitial, 0.5f);
 
 	// Assign initial values to parameters
-	//VectorXf pose = poseInitial;
-	//VectorXf shape = shapeInitial;
-	std::array<double, MANO_THETA_SIZE> pose;
-	std::array<double, MANO_BETA_SIZE> shape;
-	//double shape;
-	//double pose;
+	std::array<double, MANO_THETA_SIZE> pose = poseInitial;
+	std::array<double, MANO_BETA_SIZE> shape = shapeInitial;
+	pose[5] = 0.8;
+	shape[5] = 0.4;
 
 	//create initial HandModel for further optimization
 	HandModel hands_to_optimize("mano/model/mano_right.json", "mano/model/mano_left.json");
@@ -96,14 +123,9 @@ int run(int argc, char** argv)
 	for (int i = 0; i < NUM_KEYPOINTS; ++i)
 	{
 		ceres::CostFunction* cost_function =
-			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
+			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 10, 48>(
 				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right));
 		problem.AddResidualBlock(cost_function, nullptr, &shape[0], &pose[0]);
-
-		//problem.AddResidualBlock(
-		//	new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 1, 1>(
-		//		new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], hands_to_optimize, i, left_or_right)),
-		//	nullptr, &shape[0], &pose[0]);
 	}
 
 	ceres::Solver::Options options;
@@ -116,16 +138,19 @@ int run(int argc, char** argv)
 
 	std::cout << summary.BriefReport() << std::endl;
 
-	// Output the final pose and shape
-
-	std::cout << "Initial pose: " << poseInitial << "shape: " << shapeInitial << std::endl;
-	//std::cout << "Final pose: " << pose << "shape: " << shape << std::endl;
+	// Output the initial and final pose
+	std::cout << "Initial pose: ";
+	for (int i = 0; i < MANO_THETA_SIZE; i++)
+	{
+		std::cout << poseInitial[i] << " ";
+	}
+	std::cout << std::endl;
+	std::cout << "Final pose: ";
+	for (int i = 0; i < MANO_THETA_SIZE; i++)
+	{
+		std::cout << pose[i] << " ";
+	}
+	std::cout << std::endl;
 
 	system("pause");
-
-
-
-	//Run solver and output - trivial
-
-	return 0;
 }

@@ -99,7 +99,7 @@ defines { "CERES_USE_CXX_THREADS" }
         }
         postbuildcommands
         {
-	    ("{COPY} " .. OPENCV_DIR .. "build/bin/Debug/opencv_world" .. OPENCV_VERSION .. "d.dll bin/" .. outdir),
+	    ("{COPY} " .. OPENCV_DIR .. "x64/vc16/bin/opencv_world" .. OPENCV_VERSION .. "d.dll bin/" .. outdir),
             ("{COPY} " .. OPENPOSE_DIR .. "build/x64/Debug/openposed.dll bin/" .. outdir),
             ("{COPY} deps/misc/ bin/" .. outdir),
 	    ("{COPY} " .. GLOG_DIR .. "bin/glogd.dll bin/" .. outdir)
@@ -116,7 +116,7 @@ defines { "CERES_USE_CXX_THREADS" }
         }
         postbuildcommands
         {
-	    ("{COPY} " .. OPENCV_DIR .. "build/bin/Release/opencv_world" .. OPENCV_VERSION .. ".dll bin/" .. outdir),
+	    ("{COPY} " .. OPENCV_DIR .. "x64/vc16/bin/opencv_world" .. OPENCV_VERSION .. ".dll bin/" .. outdir),
             ("{COPY} " .. OPENPOSE_DIR .. "build/x64/Release/openpose.dll bin/" .. outdir),
 	    ("{COPY} " .. GLOG_DIR .. "bin/glog.dll bin/" .. outdir)
         }

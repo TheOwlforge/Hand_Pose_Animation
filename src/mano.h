@@ -78,27 +78,55 @@ public:
 	HandModel(std::string rightHand_filename, std::string leftHand_filename);
 	~HandModel();
 
+	std::shared_ptr<ManoHand> getHand(Hand hand) const;
+
+	std::array<double, MANO_THETA_SIZE> getMeanShape(Hand hand) const;
 	void setModelParameters(const double* const theta, const double* const beta, Hand hand);
 	void reset();
 
-	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand, SimpleCamera camera);
-	std::array<std::array<double, 2>, NUM_MANO_VERTICES> get2DVertexLocations(Hand hand, SimpleCamera camera);
+	std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> get2DJointLocations(Hand hand, SimpleCamera& camera) const;
+	std::array<std::array<double, 2>, NUM_MANO_VERTICES> get2DVertexLocations(Hand hand, SimpleCamera& camera) const;
+
+	std::array<std::array<double, 3>, NUM_OPENPOSE_KEYPOINTS> getFullJoints(Hand hand) const;
+
 	void applyTranslation(Eigen::Vector3f t, Hand hand);
 	void applyScale(float factor, Hand hand);
 	void applyRotation(float alpha, float beta, float gamma, Hand hand); //for testing purposes only, not meant to be used later as global rotation is included in theta
 
-	bool saveVertices();
-	bool saveMANOJoints();
-	bool saveOPJoints();
+	bool saveVertices() const;
+	bool saveMANOJoints() const;
+	bool saveOPJoints() const;
 
-	void display(const char* filename, Hand hand);
+	void display(const char* filename, Hand hand, SimpleCamera& camera) const;
 
-	template <int T>
-	static void fillRandom(std::array<float, T>* test, float bounds)
+	static void test()
+	{
+		SimpleCamera c;
+		HandModel* hands = new HandModel("mano/model/mano_right.json", "mano/model/mano_left.json");
+
+		std::array<double, MANO_THETA_SIZE> theta = hands->getMeanShape(Hand::RIGHT);
+		std::array<double, MANO_BETA_SIZE> beta = std::array<double, MANO_BETA_SIZE>();
+
+		hands->setModelParameters(theta.data(), beta.data(), Hand::RIGHT);
+
+		hands->applyRotation(0.5 * M_PI, 0, M_PI, Hand::RIGHT);
+		hands->applyTranslation(Eigen::Vector3f(0.03, 0.11, 1.8), Hand::RIGHT);
+
+		hands->saveVertices();
+		hands->saveMANOJoints();
+		hands->saveOPJoints();
+
+		hands->display("samples/pictures/onehand1.png", Hand::RIGHT, c);
+
+		delete hands;
+	}
+
+	template <int T, typename T2>
+	static void fillRandom(std::array<T2, T>* test, float bounds)
 	{
 		std::random_device rd;
 		std::mt19937 gen(rd());
-		std::uniform_real_distribution<float> distrib(0, 1);
+		std::uniform_real_distribution<T2> distrib(0, 1);
 
 		for (auto& val : *test) {
 			val = distrib(gen) * 2 * bounds - bounds;
