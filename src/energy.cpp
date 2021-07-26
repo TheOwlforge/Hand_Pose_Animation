@@ -159,7 +159,7 @@ void runEnergy()
 		std::array<double, MANO_THETA_SIZE> pose = std::array<double, MANO_THETA_SIZE>();
 		std::array<double, MANO_BETA_SIZE> shape = std::array<double, MANO_BETA_SIZE>();
                 
-		for (const auto& entry : std::filesystem::directory_iterator(path) {
+		for (const auto& entry : std::filesystem::directory_iterator(path)) {
 		        std::cout << entry.path() << std::endl;
 
     		        std::array<double, MANO_THETA_SIZE + MANO_BETA_SIZE> params = optimize_params(entry.path().string(), num_sequences, mean_shape, mean_pose, prev_pose, prev_shape);
