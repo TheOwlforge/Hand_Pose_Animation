@@ -8,7 +8,16 @@
 #include <fstream>
 #include "camera.h"
 #include "energy.h"
+#include <filesystem>
 
+#define VIDEO 0
+
+#define PRIOR_COEFF_EST    0.5  // Balancing term for surface estimation difference prior
+#define PRIOR_COEFF_SHAPE  0.5  // Balancing term for difference between shape parameters and mean estimation of shape parameters
+#define PRIOR_COEFF_POSE   0.5  // Balancing term for pose prior
+#define PRIOR_COEFF_TEMP   0.5  // Balancing term for temporal regularization
+
+void optimize_params(std::string filename, int num_sequences, std::array<double, MANO_BETA_SIZE> mean_shape, std::array<double, MANO_THETA_SIZE> prev_pose, std::array<double, MANO_BETA_SIZE> prev_shape);
 
 //Some poor attempts to include interfacing
 /*struct setModelParametersFunctor {
@@ -28,11 +37,10 @@
 	}
 };*/
 
-
 struct EnergyCostFunction
 {
-	EnergyCostFunction(double pointX_, double pointY_, double weight_, const int iteration_, Hand LorR_)
-		: pointX(pointX_), pointY(pointY_), weight(weight_), i(iteration_), left_or_right(LorR_)
+	EnergyCostFunction(double pointX_, double pointY_, double weight_, const int iteration_, Hand LorR_, const std::array<double, MANO_BETA_SIZE> mean_shape_, const int num_sequences_)
+		: pointX(pointX_), pointY(pointY_), weight(weight_), i(iteration_), left_or_right(LorR_), mean_shape(mean_shape_), num_sequences(num_sequences_)
 	{
 		//Some more attempts to include interfacing
 		//set_model_params.reset(new ceres::CostFunctionToFunctor<1, 48, 10>(
@@ -79,6 +87,31 @@ struct EnergyCostFunction
 		std::cout << "Computing the residual with: weight: " << weight << " keypoint: " << pointX << " predicted: " << hand_projected[i][0] << std::endl;
 		residual[0] = T(weight) * (T(hand_projected[i][0]) - T(pointX) + (T(hand_projected[i][1]) - T(pointY)));
 
+		
+		//DIFFERENT IDEAS FOR THE PRIORS
+		/*
+		// Prior 1: Make previous hand projections closer to the previous one.
+
+		if (num_sequences > 0) {
+		  residual[0] += PRIOR_COEFF_EST * pow((hand_projected[i][0] - prev_surface_est[i][0]) + (hand_projected[i][1] - prev_surface_est[i][0]), 2).sum();
+		}
+
+		// Prior 2: Make shape parameters closer to mean
+
+		residual[0] += PRIOR_COEFF_SHAPE * pow(shape - mean_shape, 2).sum();
+
+		// Prior 3: Gaussian pose prior
+		
+		residual[0] += PRIOR_COEFF_POSE * pow(pose, 2).sum();
+
+		//  Optional:  Temporal Regularizer: zero-velocity prior (Real-time Pose and Shape Reconstruction of Two Interacting Hands With a Single Depth Camera)
+
+		residual[0] += PRIOR_COEFF_TEMP * (pow(shape - prev_shape, 2).sum() + pow(pose - prev_pose, 2).sum());
+
+		prev_surface_est = hand_projected;  // save current estimations for next iteration
+		*/
+
+
 		//reset hand shape
 		testHand.reset();
 
@@ -90,18 +123,60 @@ private:
 	double pointY;
 	double weight;
 	const int i;
-	Hand left_or_right;
-	//std::unique_ptr<ceres::CostFunctionToFunctor<1, 48, 10> > set_model_params;
-	//std::unique_ptr<ceres::CostFunctionToFunctor<1, 48, 10> > mano_magic;
+	const Hand left_or_right;
+    static std::array<std::array<double, 2>, NUM_OPENPOSE_KEYPOINTS> prev_surface_est;
+    const std::array<double, MANO_BETA_SIZE> mean_shape;
+    const int num_sequences;
 };
 
 void runEnergy()
 {
 	// Read OpenPose keypoints
-	std::string filename;
-	//filename = "samples/artificial/01/keypoints01.json";
-	filename = "samples/pictures/onehand1_keypoints.json";
+	std::string path;
 
+	if (VIDEO == 1) {
+		path = "samples/webcam_examples";
+	}
+	else {
+		path = "samples/pictures/onehand1_keypoints.json";
+	}
+
+
+	if (VIDEO == 1) {
+		int num_sequences = 0;
+		std::array<double, MANO_BETA_SIZE> mean_shape = std::array<double, MANO_BETA_SIZE>();
+
+		std::array<double, MANO_THETA_SIZE> prev_pose = std::array<double, MANO_THETA_SIZE>();
+		std::array<double, MANO_BETA_SIZE> prev_shape = std::array<double, MANO_BETA_SIZE>();
+
+		for (const auto& entry : std::filesystem::directory_iterator(path)) {
+			std::cout << entry.path() << std::endl;
+
+			//Optimization for parameters is not compiling correctly since optimize_params is a void and not a VectorXf function
+			//Ceres is not compatible with VectorXf input
+			optimize_params(entry.path().string(), num_sequences, mean_shape, prev_pose, prev_shape);
+
+			/*prev_pose = pose;
+			prev_shape = shape;
+
+			mean_shape = (mean_shape * num_sequences + shape) / (num_sequences + 1);  // new mean shape after adding shape params in current iteration
+			*/
+			num_sequences++;
+		}
+	}
+	else {
+		int num_sequences = 0;
+		std::array<double, MANO_BETA_SIZE> mean_shape = std::array<double, MANO_BETA_SIZE>();
+
+		std::array<double, MANO_THETA_SIZE> prev_pose = std::array<double, MANO_THETA_SIZE>();
+		std::array<double, MANO_BETA_SIZE> prev_shape = std::array<double, MANO_BETA_SIZE>();
+
+		optimize_params(path, num_sequences, mean_shape, prev_pose, prev_shape);
+	}
+}
+
+void optimize_params(std::string filename, int num_sequences, std::array<double, MANO_BETA_SIZE> mean_shape, std::array<double, MANO_THETA_SIZE> prev_pose, std::array<double, MANO_BETA_SIZE> prev_shape) 
+{
 
 	std::array<std::array<double, NUM_KEYPOINTS * 3>, 2> keypoints = Parser::readJsonCV(filename);
 
@@ -109,8 +184,8 @@ void runEnergy()
 	std::array<double, NUM_KEYPOINTS * 3> right_keypoints = keypoints[1];
 
 	// Define initial values for parameters of pose and shape 
-	std::array<double, MANO_THETA_SIZE> poseInitial = std::array<double, MANO_THETA_SIZE>();;
-	std::array<double, MANO_BETA_SIZE> shapeInitial = std::array<double, MANO_BETA_SIZE>();;
+	std::array<double, MANO_THETA_SIZE> poseInitial = std::array<double, MANO_THETA_SIZE>();
+	std::array<double, MANO_BETA_SIZE> shapeInitial = std::array<double, MANO_BETA_SIZE>();
 	HandModel::fillRandom(&poseInitial, 0.5f);
 	HandModel::fillRandom(&shapeInitial, 0.5f);
 
@@ -128,7 +203,7 @@ void runEnergy()
 	{
 		ceres::CostFunction* cost_function =
 			new ceres::AutoDiffCostFunction<EnergyCostFunction, 1, 10, 48>(
-				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], i, left_or_right));
+				new EnergyCostFunction(right_keypoints[3 * i], right_keypoints[3 * i + 1], right_keypoints[3 * i + 2], i, left_or_right, mean_shape, num_sequences));
 		problem.AddResidualBlock(cost_function, nullptr, &shape[0], &pose[0]);
 	}
 
